@@ -1,0 +1,711 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caza Anuncios</title>
+  <style>
+    :root {
+      --bg-1: #fef7ea;
+      --bg-2: #dff4ff;
+      --bg-3: #efe6ff;
+      --blue: #2f6df6;
+      --purple: #8148ff;
+      --yellow: #ffd44d;
+      --green: #2fc17f;
+      --orange: #ff974d;
+      --pink: #ff6fb7;
+      --text: #33415c;
+      --muted: #667694;
+      --card: rgba(255, 255, 255, 0.82);
+      --shadow: 0 20px 40px rgba(84, 99, 140, 0.15);
+      --radius: 28px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 212, 77, 0.25), transparent 22%),
+        radial-gradient(circle at top right, rgba(129, 72, 255, 0.18), transparent 24%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
+      min-height: 100vh;
+    }
+    .shell { width: min(1240px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+    .hero,.screen,.teacher-panel {
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .hero { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; padding: 28px; margin-bottom: 24px; }
+    .brand { display: flex; gap: 18px; align-items: center; }
+    .brand-badge {
+      width: 92px; height: 92px; border-radius: 30px; background: linear-gradient(135deg, var(--blue), var(--purple));
+      display: grid; place-items: center; color: white; font-size: 2.4rem; box-shadow: 0 14px 28px rgba(93, 89, 230, 0.24);
+    }
+    h1,h2,h3 { margin: 0; line-height: 1.05; }
+    h1 { font-size: clamp(2.2rem, 4vw, 3.4rem); color: var(--blue); }
+    .subtitle { margin-top: 10px; color: var(--orange); font-weight: 900; font-size: 1.1rem; }
+    .hero-copy p,.mission-text,.helper { margin: 0; line-height: 1.6; }
+    .mission-card { background: linear-gradient(135deg, #ffffff, #f5edff); border-radius: 24px; padding: 18px; display: grid; gap: 10px; align-content: start; }
+    .mission-chip,.mini-chip,.tag { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; font-weight: 800; }
+    .mission-chip { width: fit-content; padding: 10px 14px; background: rgba(47, 109, 246, 0.12); color: var(--blue); }
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    button { border: none; font: inherit; cursor: pointer; }
+    .primary-btn,.ghost-btn,.support-btn { padding: 14px 18px; border-radius: 18px; font-weight: 900; transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease; }
+    .primary-btn:hover,.ghost-btn:hover,.support-btn:hover,.choice:hover,.draggable:hover,.match-card:hover { transform: translateY(-2px); }
+    .primary-btn { background: linear-gradient(135deg, var(--blue), var(--purple)); color: white; box-shadow: 0 14px 28px rgba(88, 92, 219, 0.25); }
+    .ghost-btn { background: rgba(129, 72, 255, 0.12); color: var(--purple); }
+    .support-btn { background: linear-gradient(135deg, #fff7cf, #ffe79a); color: #8a5900; }
+    .screen { padding: 28px; display: none; gap: 24px; margin-bottom: 24px; }
+    .screen.active { display: grid; }
+    .topbar { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+    .topbar-left { display: grid; gap: 8px; }
+    .level-pill { width: fit-content; padding: 10px 14px; background: linear-gradient(135deg, rgba(47, 109, 246, 0.12), rgba(129, 72, 255, 0.16)); color: var(--purple); border-radius: 999px; font-weight: 900; }
+    .progress-wrap { display: grid; gap: 10px; min-width: 260px; }
+    .progress { width: 100%; height: 16px; background: rgba(129, 72, 255, 0.12); border-radius: 999px; overflow: hidden; }
+    .progress > div { height: 100%; background: linear-gradient(90deg, var(--yellow), var(--orange), var(--purple)); width: 25%; transition: width 0.35s ease; }
+    .info-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 20px; }
+    .announce-card,.task-card,.feedback-card,.teacher-card,.simplified-card {
+      border-radius: 24px; padding: 22px; background: linear-gradient(180deg, #ffffff, #f9f6ff); box-shadow: 0 14px 26px rgba(96, 109, 149, 0.11);
+    }
+    .announce-card { display: grid; gap: 14px; }
+    .announce-box {
+      padding: 18px; border-radius: 20px; background: linear-gradient(135deg, #edf6ff, #fff3df);
+      border: 2px solid rgba(47, 109, 246, 0.1); line-height: 1.75; font-weight: 700;
+    }
+    .choice-grid,.match-grid,.teacher-grid { display: grid; gap: 14px; }
+    .choice-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .choice,.match-card,.draggable {
+      border-radius: 22px; padding: 18px; background: white; box-shadow: 0 12px 20px rgba(101, 113, 160, 0.12);
+      color: var(--text); font-weight: 800; line-height: 1.5; min-height: 104px; display: flex; align-items: center; justify-content: center; text-align: center;
+    }
+    .choice.selected,.match-card.selected {
+      background: linear-gradient(135deg, #d2f3ff, #99dcff); color: #0f4d73;
+      box-shadow: 0 0 0 4px rgba(255,255,255,0.95), 0 0 0 8px rgba(94, 195, 255, 0.34), 0 18px 28px rgba(72, 146, 204, 0.24);
+      transform: translateY(-3px) scale(1.02);
+    }
+    .choice.correct,.match-card.correct,.drop-zone.correct { background: linear-gradient(135deg, #ddffe8, #87e1b0); color: #1d7347; }
+    .choice.wrong,.match-card.wrong,.drop-zone.wrong { background: linear-gradient(135deg, #ffe7e7, #ffb2b2); color: #8e3d48; }
+    .drag-layout { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 18px; align-items: start; }
+    .bank,.drop-grid { display: grid; gap: 14px; }
+    .bank { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); padding: 18px; border-radius: 24px; background: linear-gradient(135deg, #eef7ff, #f6efff); }
+    .draggable { min-height: 86px; cursor: grab; }
+    .draggable.used { opacity: 0.45; pointer-events: none; }
+    .drop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .drop-zone {
+      min-height: 150px; border-radius: 24px; padding: 18px; border: 3px dashed rgba(129, 72, 255, 0.2);
+      background: linear-gradient(180deg, #fff, #faf5ff); display: grid; gap: 12px; align-content: start; transition: transform 0.18s ease, border-color 0.18s ease;
+    }
+    .drop-zone h4 { color: var(--purple); margin: 0; }
+    .drop-zone.active { transform: scale(1.01); border-color: rgba(47, 109, 246, 0.45); }
+    .drop-content { min-height: 74px; display: grid; gap: 10px; }
+    .mini-chip { padding: 8px 12px; background: rgba(255, 212, 77, 0.18); color: #8e6500; width: fit-content; }
+    .feedback-card { display: grid; gap: 10px; }
+    .feedback-card strong { color: var(--purple); font-size: 1.1rem; }
+    .bottom-actions { display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; align-items: center; }
+    .result-box { padding: 16px 18px; border-radius: 20px; background: rgba(47, 109, 246, 0.08); font-weight: 800; }
+    .textarea-box {
+      width: 100%; min-height: 180px; border-radius: 20px; border: 2px solid rgba(129, 72, 255, 0.16);
+      padding: 16px; resize: vertical; font: inherit; color: var(--text); line-height: 1.6;
+    }
+    .teacher-panel { padding: 28px; display: grid; gap: 18px; margin-top: 24px; }
+    .teacher-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .teacher-card { background: linear-gradient(180deg, #fff, #f8fbff); }
+    .teacher-card h4 { margin: 0 0 10px; color: var(--blue); }
+    .tag { padding: 8px 12px; background: rgba(47, 109, 246, 0.12); color: var(--blue); width: fit-content; margin-bottom: 10px; }
+    .hidden { display: none !important; }
+    .simple-text .announce-box,.simple-text .helper,.simple-text .feedback-card,.simple-text .task-card { font-size: 1.05rem; }
+    @media (max-width: 980px) { .hero,.info-grid,.drag-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) {
+      .shell { width: min(100% - 20px, 100%); padding-top: 14px; }
+      .hero,.screen,.teacher-panel { padding: 18px; border-radius: 22px; }
+      .choice-grid,.drop-grid { grid-template-columns: 1fr; }
+      .bottom-actions { flex-direction: column; align-items: stretch; }
+      .primary-btn,.ghost-btn,.support-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell" id="appRoot">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="brand">
+          <div class="brand-badge">??</div>
+          <div>
+            <h1>Caza Anuncios</h1>
+            <p class="subtitle">Mision interactiva sobre el anuncio radial</p>
+          </div>
+        </div>
+        <p class="mission-text" style="margin-top:18px;">
+          Eres parte de la Brigada Sonora Escolar. Tu misión es analizar anuncios, descubrir cómo persuaden,
+          reconocer su estructura y decidir si comunican con honestidad y utilidad social.
+        </p>
+        <div class="toolbar">
+          <button class="primary-btn" id="startMission">Comenzar misión</button>
+          <button class="support-btn" id="speakMission">?? Escuchar instrucciones</button>
+          <button class="ghost-btn" id="toggleSimple">Texto simplificado</button>
+          <button class="ghost-btn" id="toggleTimer">Tiempo flexible: Activado</button>
+        </div>
+      </div>
+      <article class="mission-card">
+        <span class="mission-chip">?? Objetivo</span>
+        <p class="helper">
+          Escuchar o leer anuncios radiales, detectar producto o acción social, público, intención comunicativa,
+          emociones, recursos persuasivos, estructura y análisis ético.
+        </p>
+        <span class="mini-chip">?? Gramática integrada</span>
+        <p class="helper">
+          Encontrar oraciones imperativas, oraciones interrogativas y palabras persuasivas dentro del anuncio.
+        </p>
+        <span class="mini-chip">?? Apoyos</span>
+        <p class="helper">
+          Instrucciones en audio, texto simplificado, tiempo flexible, ayudas visuales y retroalimentación amistosa.
+        </p>
+      </article>
+    </section>
+
+    <section class="screen active" id="screen-intro">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="level-pill">Historia inicial</span>
+          <h2>La emisora escolar necesita tu ayuda</h2>
+          <p class="helper">
+            Hoy llegaron varios anuncios a la estación de radio del colegio. Tu tarea será descubrir cómo están construidos
+            y qué tan bien persuaden a su audiencia.
+          </p>
+        </div>
+        <div class="progress-wrap">
+          <div class="result-box">Progreso general: 0 de 4 niveles</div>
+          <div class="progress"><div id="globalProgress"></div></div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <article class="announce-card">
+          <span class="mission-chip">?? Anuncio de misión</span>
+          <div class="announce-box" id="mainAnnouncement">
+            ¡Atención familias de la comunidad! Este viernes a las 4 de la tarde los esperamos en la gran jornada
+            “Parque Limpio, Barrio Feliz”. Trae guantes, energía y ganas de cuidar nuestro ambiente. Habrá música,
+            juegos y sorpresas para todos. ¿Te unes a esta misión verde? Ven al parque central y demuestra que juntos
+            podemos transformar nuestro entorno.
+          </div>
+          <div class="toolbar">
+            <button class="support-btn" id="readAnnouncement">?? Escuchar anuncio</button>
+            <button class="ghost-btn" id="readSlowAnnouncement">?? Escucha lenta</button>
+          </div>
+        </article>
+        <article class="task-card">
+          <span class="mission-chip">??? Ruta de niveles</span>
+          <div class="helper">
+            <p><strong>Nivel 1.</strong> Descubre qué se anuncia.</p>
+            <p><strong>Nivel 2.</strong> Encuentra las pistas persuasivas.</p>
+            <p><strong>Nivel 3.</strong> Reconoce la estructura del anuncio.</p>
+            <p><strong>Nivel 4.</strong> Analiza si el anuncio es honesto, exagerado o socialmente útil.</p>
+          </div>
+          <div class="bottom-actions" style="margin-top:18px;">
+            <button class="primary-btn" data-go="1">Ir al nivel 1</button>
+          </div>
+        </article>
+      </div>
+    </section>
+    <section class="screen" id="screen-1">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="level-pill">Nivel 1</span>
+          <h2>Descubre qué se anuncia</h2>
+          <p class="helper">Lee el anuncio y marca todas las respuestas correctas sobre qué se anuncia y a quién va dirigido.</p>
+        </div>
+        <div class="progress-wrap">
+          <div class="result-box">Nivel 1 de 4</div>
+          <div class="progress"><div style="width:25%"></div></div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <article class="announce-card">
+          <span class="mission-chip">?? Zona de escucha y lectura</span>
+          <div class="announce-box" id="announcementLevel1"></div>
+          <div class="toolbar">
+            <button class="support-btn speak-screen" data-text-target="announcementLevel1">?? Escuchar instrucciones</button>
+          </div>
+        </article>
+        <article class="task-card">
+          <span class="mission-chip">?? Selección múltiple</span>
+          <div class="choice-grid" id="level1Choices"></div>
+        </article>
+      </div>
+      <article class="feedback-card" id="feedback1">
+        <strong>Retroalimentación amigable</strong>
+        <p class="helper">Selecciona varias tarjetas. Debes encontrar las ideas que sí corresponden al anuncio.</p>
+      </article>
+      <div class="bottom-actions">
+        <button class="ghost-btn" data-back="intro">Volver</button>
+        <button class="primary-btn" id="checkLevel1">Verificar nivel 1</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-2">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="level-pill">Nivel 2</span>
+          <h2>Encuentra las pistas persuasivas</h2>
+          <p class="helper">Selecciona recursos persuasivos y reconoce gramática dentro del anuncio.</p>
+        </div>
+        <div class="progress-wrap">
+          <div class="result-box">Nivel 2 de 4</div>
+          <div class="progress"><div style="width:50%"></div></div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <article class="task-card">
+          <span class="mission-chip">? Pistas persuasivas</span>
+          <div class="choice-grid" id="level2Choices"></div>
+        </article>
+        <article class="task-card">
+          <span class="mission-chip">?? Gramática integrada</span>
+          <div class="choice-grid" id="grammarChoices"></div>
+        </article>
+      </div>
+      <article class="feedback-card" id="feedback2">
+        <strong>Retroalimentación amigable</strong>
+        <p class="helper">Busca palabras que invitan a actuar, preguntas que llaman la atención y expresiones emocionales.</p>
+      </article>
+      <div class="bottom-actions">
+        <button class="ghost-btn" data-back="1">Volver al nivel 1</button>
+        <button class="primary-btn" id="checkLevel2">Verificar nivel 2</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-3">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="level-pill">Nivel 3</span>
+          <h2>Reconoce la estructura del anuncio</h2>
+          <p class="helper">Arrastra cada fragmento a la parte correcta de la estructura: llamada, presentación, argumentación e implicación.</p>
+        </div>
+        <div class="progress-wrap">
+          <div class="result-box">Nivel 3 de 4</div>
+          <div class="progress"><div style="width:75%"></div></div>
+        </div>
+      </div>
+      <div class="drag-layout">
+        <article class="task-card">
+          <span class="mission-chip">?? Banco de fragmentos</span>
+          <div class="bank" id="fragmentBank"></div>
+        </article>
+        <article class="task-card">
+          <span class="mission-chip">?? Estructura del anuncio</span>
+          <div class="drop-grid" id="dropGrid"></div>
+        </article>
+      </div>
+      <article class="feedback-card" id="feedback3">
+        <strong>Retroalimentación amigable</strong>
+        <p class="helper">Piensa así: primero llama la atención, luego presenta, después argumenta y finalmente implica al público.</p>
+      </article>
+      <div class="bottom-actions">
+        <button class="ghost-btn" data-back="2">Volver al nivel 2</button>
+        <button class="primary-btn" id="checkLevel3">Verificar nivel 3</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-4">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="level-pill">Nivel 4</span>
+          <h2>Analiza el anuncio</h2>
+          <p class="helper">Decide si el anuncio es honesto, exagerado o socialmente útil, y luego explica por qué persuade.</p>
+        </div>
+        <div class="progress-wrap">
+          <div class="result-box">Nivel 4 de 4</div>
+          <div class="progress"><div style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="info-grid">
+        <article class="task-card">
+          <span class="mission-chip">?? Análisis crítico</span>
+          <div class="match-grid" id="level4Choices"></div>
+        </article>
+        <article class="task-card">
+          <span class="mission-chip">??? Misión final</span>
+          <p class="helper">
+            Escribe por qué este anuncio persuade. Puedes mencionar emociones, recursos persuasivos, público e intención comunicativa.
+          </p>
+          <textarea class="textarea-box" id="finalReflection" placeholder="Escribe aquí tu justificación..."></textarea>
+          <div class="toolbar">
+            <button class="support-btn" id="speakReflectionPrompt">?? Escuchar la misión final</button>
+          </div>
+        </article>
+      </div>
+      <article class="feedback-card" id="feedback4">
+        <strong>Retroalimentación amigable</strong>
+        <p class="helper">Un buen análisis no solo dice si el anuncio gusta o no; también explica cómo intenta convencer.</p>
+      </article>
+      <div class="bottom-actions">
+        <button class="ghost-btn" data-back="3">Volver al nivel 3</button>
+        <button class="primary-btn" id="finishMission">Finalizar misión</button>
+      </div>
+    </section>
+
+    <section class="teacher-panel">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span class="level-pill">Sección docente</span>
+          <h2>Relación pedagógica del juego</h2>
+          <p class="helper">
+            Este juego trabaja comprensión oral y escrita, análisis crítico y ciudadanía mediante el estudio del anuncio radial.
+          </p>
+        </div>
+      </div>
+      <div class="teacher-grid">
+        <article class="teacher-card">
+          <span class="tag">Comprensión oral</span>
+          <h4>Escucha con intención</h4>
+          <p class="helper">El estudiante reconoce información explícita, tono, audiencia y emoción del anuncio escuchado.</p>
+        </article>
+        <article class="teacher-card">
+          <span class="tag">Comprensión escrita</span>
+          <h4>Lectura funcional</h4>
+          <p class="helper">Interpreta estructura, vocabulario persuasivo y propósito comunicativo del texto radial transcrito.</p>
+        </article>
+        <article class="teacher-card">
+          <span class="tag">Pensamiento crítico</span>
+          <h4>Analiza y compara</h4>
+          <p class="helper">Distingue hechos, exageraciones, utilidad social y estrategias de persuasión.</p>
+        </article>
+        <article class="teacher-card">
+          <span class="tag">Ética y ciudadanía</span>
+          <h4>Mensaje responsable</h4>
+          <p class="helper">Reflexiona sobre anuncios honestos, mensajes sociales y cuidado de la comunidad.</p>
+        </article>
+        <article class="teacher-card">
+          <span class="tag">Atención a la diversidad</span>
+          <h4>Apoyos accesibles</h4>
+          <p class="helper">Incluye audio, texto simplificado, apoyos visuales, retroalimentación amistosa y tiempo flexible.</p>
+        </article>
+        <article class="teacher-card">
+          <span class="tag">Intención pedagógica</span>
+          <h4>Analizar para crear</h4>
+          <p class="helper">Antes de producir anuncios, el estudiante aprende a reconocer cómo se construyen y cómo persuaden.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const announcementText = "Atención familias de la comunidad: este viernes a las 4 de la tarde los esperamos en la gran jornada Parque Limpio, Barrio Feliz. Trae guantes, energía y ganas de cuidar nuestro ambiente. Habrá música, juegos y sorpresas para todos. ¿Te unes a esta misión verde? Ven al parque central y demuestra que juntos podemos transformar nuestro entorno.";
+    const state = { simple: false, flexibleTime: true, level1: new Set(), level2a: new Set(), level2b: new Set(), level3: {}, level4: null, finishedLevels: 0 };
+    const level1Correct = new Set([
+      "Se anuncia una jornada comunitaria de limpieza.",
+      "El anuncio va dirigido a familias y personas de la comunidad.",
+      "La intención es invitar a participar en una acción social.",
+      "Transmite entusiasmo y compromiso con el ambiente."
+    ]);
+    const level2PersuasiveCorrect = new Set([
+      "¿Te unes a esta misión verde?",
+      "Trae guantes, energía y ganas de cuidar nuestro ambiente.",
+      "Habrá música, juegos y sorpresas para todos.",
+      "Demuestra que juntos podemos transformar nuestro entorno."
+    ]);
+    const level2GrammarCorrect = new Set([
+      "Trae guantes, energía y ganas de cuidar nuestro ambiente. ? Imperativa",
+      "¿Te unes a esta misión verde? ? Interrogativa",
+      "sorpresas / juntos / transformar ? Palabras persuasivas"
+    ]);
+    const structureCorrect = {
+      "¿Te unes a esta misión verde?": "Llamada",
+      "Este viernes a las 4 de la tarde los esperamos en la gran jornada Parque Limpio, Barrio Feliz.": "Presentación",
+      "Habrá música, juegos y sorpresas para todos.": "Argumentación",
+      "Ven al parque central y demuestra que juntos podemos transformar nuestro entorno.": "Implicación"
+    };
+    const level4Correct = "Es socialmente útil";
+    const screens = { intro: document.getElementById("screen-intro"), 1: document.getElementById("screen-1"), 2: document.getElementById("screen-2"), 3: document.getElementById("screen-3"), 4: document.getElementById("screen-4") };
+    function init() {
+      document.getElementById("announcementLevel1").textContent = announcementText;
+      renderLevel1Choices();
+      renderLevel2Choices();
+      renderGrammarChoices();
+      renderLevel3Board();
+      renderLevel4Choices();
+      bindGlobalActions();
+      updateProgress(0);
+    }
+
+    function bindGlobalActions() {
+      document.getElementById("startMission").onclick = () => showScreen("intro");
+      document.querySelector('[data-go="1"]').onclick = () => showScreen("1");
+      document.getElementById("speakMission").onclick = () => speak("Escucha con atención. Tu misión es analizar anuncios radiales, descubrir cómo persuaden y decidir si son útiles y honestos.");
+      document.getElementById("readAnnouncement").onclick = () => speak(announcementText);
+      document.getElementById("readSlowAnnouncement").onclick = () => speak(announcementText, 0.82);
+      document.getElementById("toggleSimple").onclick = toggleSimpleText;
+      document.getElementById("toggleTimer").onclick = toggleTimer;
+      document.getElementById("speakReflectionPrompt").onclick = () => speak("Explica por qué este anuncio persuade. Puedes hablar sobre emociones, intención comunicativa, público y recursos persuasivos.");
+      document.querySelectorAll(".speak-screen").forEach((button) => {
+        button.onclick = () => {
+          const target = document.getElementById(button.dataset.textTarget);
+          speak(target.textContent);
+        };
+      });
+      document.querySelectorAll("[data-back]").forEach((button) => {
+        button.onclick = () => showScreen(button.dataset.back);
+      });
+      document.getElementById("checkLevel1").onclick = checkLevel1;
+      document.getElementById("checkLevel2").onclick = checkLevel2;
+      document.getElementById("checkLevel3").onclick = checkLevel3;
+      document.getElementById("finishMission").onclick = finishMission;
+    }
+
+    function showScreen(key) {
+      Object.values(screens).forEach((screen) => screen.classList.remove("active"));
+      screens[key].classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function updateProgress(level) { document.getElementById("globalProgress").style.width = `${level * 25}%`; }
+    function markFinished(level) { if (state.finishedLevels < level) state.finishedLevels = level; updateProgress(state.finishedLevels); }
+
+    function toggleSimpleText() {
+      state.simple = !state.simple;
+      document.getElementById("appRoot").classList.toggle("simple-text", state.simple);
+      document.getElementById("toggleSimple").textContent = state.simple ? "Texto simplificado: Activado" : "Texto simplificado";
+      const simpleAnnouncement = state.simple
+        ? "Este anuncio invita a las familias a limpiar el parque el viernes a las 4. Quiere motivar a la comunidad a cuidar el ambiente."
+        : announcementText;
+      document.getElementById("announcementLevel1").textContent = simpleAnnouncement;
+      document.getElementById("mainAnnouncement").textContent = simpleAnnouncement;
+    }
+
+    function toggleTimer() {
+      state.flexibleTime = !state.flexibleTime;
+      document.getElementById("toggleTimer").textContent = `Tiempo flexible: ${state.flexibleTime ? "Activado" : "Desactivado"}`;
+    }
+
+    function renderLevel1Choices() {
+      const choices = [
+        "Se anuncia una jornada comunitaria de limpieza.",
+        "Se vende un juguete nuevo.",
+        "El anuncio va dirigido a familias y personas de la comunidad.",
+        "La intención es invitar a participar en una acción social.",
+        "Transmite entusiasmo y compromiso con el ambiente.",
+        "El texto habla de una receta de cocina."
+      ];
+      renderSelectableCards("level1Choices", choices, state.level1);
+    }
+
+    function renderLevel2Choices() {
+      const choices = [
+        "¿Te unes a esta misión verde?",
+        "Trae guantes, energía y ganas de cuidar nuestro ambiente.",
+        "Habrá música, juegos y sorpresas para todos.",
+        "Demuestra que juntos podemos transformar nuestro entorno.",
+        "Este viernes a las 4 de la tarde.",
+        "Parque central."
+      ];
+      renderSelectableCards("level2Choices", choices, state.level2a);
+    }
+
+    function renderGrammarChoices() {
+      const choices = [
+        "Trae guantes, energía y ganas de cuidar nuestro ambiente. ? Imperativa",
+        "¿Te unes a esta misión verde? ? Interrogativa",
+        "sorpresas / juntos / transformar ? Palabras persuasivas",
+        "Parque central. ? Imperativa",
+        "Este viernes a las 4 de la tarde. ? Interrogativa",
+        "familias / parque / viernes ? Palabras persuasivas"
+      ];
+      renderSelectableCards("grammarChoices", choices, state.level2b);
+    }
+
+    function renderSelectableCards(containerId, choices, currentSet) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = choices.map((choice) => `
+        <button class="choice ${currentSet.has(choice) ? "selected" : ""}" data-group="${containerId}" data-value="${escapeHtml(choice)}" type="button">
+          ${choice}
+        </button>
+      `).join("");
+      container.querySelectorAll(".choice").forEach((card) => {
+        card.onclick = () => {
+          const value = card.dataset.value;
+          if (containerId === "level4Choices") {
+            state.level4 = value;
+            renderLevel4Choices();
+            return;
+          }
+          if (currentSet.has(value)) currentSet.delete(value); else currentSet.add(value);
+          renderSelectableCards(containerId, choices, currentSet);
+        };
+      });
+    }
+
+    function renderLevel3Board() {
+      const fragments = Object.keys(structureCorrect);
+      const bank = document.getElementById("fragmentBank");
+      const dropGrid = document.getElementById("dropGrid");
+      const zones = ["Llamada", "Presentación", "Argumentación", "Implicación"];
+      bank.innerHTML = fragments.map((fragment) => `
+        <div class="draggable ${isFragmentUsed(fragment) ? "used" : ""}" draggable="${!isFragmentUsed(fragment)}" data-fragment="${escapeHtml(fragment)}">
+          ${fragment}
+        </div>
+      `).join("");
+      dropGrid.innerHTML = zones.map((zone) => `
+        <div class="drop-zone" data-zone="${zone}">
+          <h4>${zone}</h4>
+          <div class="drop-content">${state.level3[zone] ? `<div class="draggable used">${state.level3[zone]}</div>` : ""}</div>
+        </div>
+      `).join("");
+      bank.querySelectorAll(".draggable:not(.used)").forEach((item) => {
+        item.addEventListener("dragstart", (event) => {
+          event.dataTransfer.setData("text/plain", item.dataset.fragment);
+        });
+      });
+      dropGrid.querySelectorAll(".drop-zone").forEach((zone) => {
+        zone.addEventListener("dragover", (event) => { event.preventDefault(); zone.classList.add("active"); });
+        zone.addEventListener("dragleave", () => zone.classList.remove("active"));
+        zone.addEventListener("drop", (event) => {
+          event.preventDefault();
+          zone.classList.remove("active");
+          const fragment = event.dataTransfer.getData("text/plain");
+          state.level3[zone.dataset.zone] = fragment;
+          renderLevel3Board();
+        });
+      });
+    }
+
+    function isFragmentUsed(fragment) { return Object.values(state.level3).includes(fragment); }
+
+    function renderLevel4Choices() {
+      const choices = ["Es honesto", "Es exagerado", "Es socialmente útil", "No tiene ninguna intención"];
+      const container = document.getElementById("level4Choices");
+      container.innerHTML = choices.map((choice) => `
+        <button class="match-card ${state.level4 === choice ? "selected" : ""}" data-value="${choice}" type="button">
+          ${choice}
+        </button>
+      `).join("");
+      container.querySelectorAll(".match-card").forEach((card) => {
+        card.onclick = () => {
+          state.level4 = card.dataset.value;
+          renderLevel4Choices();
+        };
+      });
+    }
+
+    function checkLevel1() {
+      const selected = state.level1;
+      const cards = document.querySelectorAll("#level1Choices .choice");
+      let correctCount = 0;
+      cards.forEach((card) => {
+        const value = card.dataset.value;
+        card.classList.remove("correct", "wrong");
+        if (selected.has(value) && level1Correct.has(value)) { card.classList.add("correct"); correctCount += 1; }
+        else if (selected.has(value) && !level1Correct.has(value)) card.classList.add("wrong");
+      });
+      const feedback = document.getElementById("feedback1");
+      if (correctCount === level1Correct.size && selected.size === level1Correct.size) {
+        feedback.innerHTML = `<strong>¡Excelente!</strong><p class="helper">Descubriste correctamente qué se anuncia, a quién va dirigido y qué emoción comunica.</p>`;
+        markFinished(1);
+        setTimeout(() => showScreen("2"), 650);
+      } else {
+        feedback.innerHTML = `<strong>Vas bien</strong><p class="helper">Piensa en tres pistas: qué acción social se propone, quién debe participar y qué emoción transmite el mensaje.</p>`;
+      }
+    }
+
+    function checkLevel2() {
+      const persuasiveOk = compareSets(state.level2a, level2PersuasiveCorrect);
+      const grammarOk = compareSets(state.level2b, level2GrammarCorrect);
+      paintSetResult("#level2Choices .choice", level2PersuasiveCorrect);
+      paintSetResult("#grammarChoices .choice", level2GrammarCorrect);
+      const feedback = document.getElementById("feedback2");
+      if (persuasiveOk && grammarOk) {
+        feedback.innerHTML = `<strong>¡Muy bien!</strong><p class="helper">Reconociste recursos persuasivos, oraciones imperativas, interrogativas y vocabulario que busca convencer.</p>`;
+        markFinished(2);
+        setTimeout(() => showScreen("3"), 650);
+      } else {
+        feedback.innerHTML = `<strong>Sigue analizando</strong><p class="helper">Busca frases que invitan a actuar, preguntas que atrapan la atención y palabras que generan entusiasmo.</p>`;
+      }
+    }
+
+    function checkLevel3() {
+      const zones = document.querySelectorAll(".drop-zone");
+      let correct = 0;
+      zones.forEach((zone) => {
+        const zoneName = zone.dataset.zone;
+        zone.classList.remove("correct", "wrong");
+        if (state.level3[zoneName] && structureCorrect[state.level3[zoneName]] === zoneName) {
+          zone.classList.add("correct");
+          correct += 1;
+        } else {
+          zone.classList.add("wrong");
+        }
+      });
+      const feedback = document.getElementById("feedback3");
+      if (correct === 4) {
+        feedback.innerHTML = `<strong>¡Genial!</strong><p class="helper">Reconociste la estructura del anuncio: llamada, presentación, argumentación e implicación.</p>`;
+        markFinished(3);
+        setTimeout(() => showScreen("4"), 650);
+      } else {
+        feedback.innerHTML = `<strong>Revisa el orden de las funciones</strong><p class="helper">La llamada atrae, la presentación informa qué es, la argumentación convence y la implicación invita a actuar.</p>`;
+      }
+    }
+
+    function finishMission() {
+      renderLevel4Choices();
+      const cards = document.querySelectorAll("#level4Choices .match-card");
+      cards.forEach((card) => {
+        card.classList.remove("correct", "wrong");
+        if (card.dataset.value === level4Correct && state.level4 === level4Correct) card.classList.add("correct");
+        else if (card.dataset.value === state.level4 && state.level4 !== level4Correct) card.classList.add("wrong");
+      });
+      const reflection = document.getElementById("finalReflection").value.trim();
+      const feedback = document.getElementById("feedback4");
+      if (state.level4 === level4Correct && reflection.length > 24) {
+        feedback.innerHTML = `<strong>¡Misión completada!</strong><p class="helper">Analizaste el anuncio con pensamiento crítico y justificaste cómo persuade. Tu observación muestra comprensión oral, escrita y ética ciudadana.</p>`;
+        markFinished(4);
+        updateProgress(4);
+      } else if (state.level4 !== level4Correct) {
+        feedback.innerHTML = `<strong>Vuelve a pensar</strong><p class="helper">Este anuncio busca una acción comunitaria positiva y útil para la sociedad. Revisa si comunica una invitación responsable.</p>`;
+      } else {
+        feedback.innerHTML = `<strong>Buen análisis inicial</strong><p class="helper">Ahora escribe un poco más: explica qué emociones genera, a quién quiere convencer y qué recursos persuasivos usa.</p>`;
+      }
+    }
+
+    function paintSetResult(selector, correctSet) {
+      document.querySelectorAll(selector).forEach((card) => {
+        const value = card.dataset.value;
+        card.classList.remove("correct", "wrong");
+        const parentId = card.parentElement.id;
+        const selectedSet = parentId === "level2Choices" ? state.level2a : state.level2b;
+        if (selectedSet.has(value) && correctSet.has(value)) card.classList.add("correct");
+        else if (selectedSet.has(value) && !correctSet.has(value)) card.classList.add("wrong");
+      });
+    }
+
+    function compareSets(selected, correct) {
+      if (selected.size !== correct.size) return false;
+      for (const item of selected) { if (!correct.has(item)) return false; }
+      return true;
+    }
+
+    function speak(text, rate = 1) {
+      if (!("speechSynthesis" in window)) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "es-DO";
+      utterance.rate = rate;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    init();
+  </script>
+</body>
+</html>
+

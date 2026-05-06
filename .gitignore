@@ -1,0 +1,12 @@
+.git
+_gitdata/
+.yoyo-shared-storage.json
+.chrome-debug/
+.chrome-debug2/
+.edge-debug/
+.edge-headless/
+chrome-clean-profile/
+chrome-safe-profile/
+edge-headless-profile/
+edge-profile/
+*.log
