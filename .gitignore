@@ -1,5 +1,6 @@
 .git
 _gitdata/
+.ghconfig/
 .yoyo-shared-storage.json
 .chrome-debug/
 .chrome-debug2/
