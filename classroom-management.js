@@ -1,4 +1,8 @@
 (() => {
+  if (window.location.protocol === "file:") {
+    return;
+  }
+
   const app = document.getElementById("app");
   if (!app) return;
 

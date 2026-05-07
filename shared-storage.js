@@ -1,4 +1,18 @@
 (() => {
+  const isLocalMode =
+    window.location.protocol === "file:" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "localhost";
+
+  if (isLocalMode) {
+    window.__YOYO_SHARED_SYNC__ = {
+      refresh() {},
+      flush() {},
+      keys: [],
+    };
+    return;
+  }
+
   const SHARED_KEYS = [
     "yoyo_rg_t",
     "yoyo_rg_s",
