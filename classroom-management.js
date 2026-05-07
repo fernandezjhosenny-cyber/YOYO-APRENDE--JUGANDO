@@ -602,15 +602,7 @@
   }
 
   function syncOwnerSessionFromUrl() {
-    const url = new URL(window.location.href);
-    const ownerMode = url.searchParams.get("owner");
-    if (ownerMode !== "1") return;
-    const ownerId = getOwnerTeacherId();
-    if (!ownerId) return;
-    const current = getSession();
-    if (!current || current.role !== "teacher" || current.id !== ownerId) {
-      writeJson(KEYS.session, { role: "teacher", id: ownerId });
-    }
+    return;
   }
 
   function buildTeacherScoresCsv(teacherId) {
@@ -1476,9 +1468,9 @@
         return left.student.name.localeCompare(right.student.name, "es");
       });
 
-    const selectedPack =
-      filteredStudents.find(({ student }) => student.id === dashboard.selectedStudentId) ||
-      null;
+    const selectedPack = dashboard.detailOpen
+      ? (filteredStudents.find(({ student }) => student.id === dashboard.selectedStudentId) || null)
+      : null;
     const selectedStudent = selectedPack?.student || null;
     const selectedSummary = selectedPack?.summary || null;
     const selectedHistory = selectedStudent ? filterStudentHistory(getStudentHistory(selectedStudent.id, teacherId), dashboard) : [];
@@ -1754,13 +1746,15 @@
                     ${filteredStudents.map(({ student, summary: studentSummary }) => {
                       const state = getPerformanceState(studentSummary);
                       return `
-                        <button class="teacher-student-row teacher-student-row-v2 ${selectedStudent?.id === student.id ? "selected" : ""}" type="button" data-student-select="${student.id}">
+                        <article class="teacher-student-row teacher-student-row-v2 ${selectedStudent?.id === student.id ? "selected" : ""}">
                           <div class="teacher-student-col teacher-student-main">
-                            <div class="teacher-student-avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase())}</div>
-                            <div>
-                              <strong>${escapeHtml(student.name)}</strong>
-                              <span>${getStudentFlagReason(studentSummary)}</span>
-                            </div>
+                            <button class="teacher-student-link" type="button" data-student-select="${student.id}" aria-label="Ver detalles de ${escapeHtml(student.name)}">
+                              <div class="teacher-student-avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase())}</div>
+                              <div>
+                                <strong>${escapeHtml(student.name)}</strong>
+                                <span>${getStudentFlagReason(studentSummary)}</span>
+                              </div>
+                            </button>
                           </div>
                           <div class="teacher-student-col">
                             <strong>${progressPercent(studentSummary)}%</strong>
@@ -1785,7 +1779,7 @@
                               `).join("")}
                             </div>
                           </div>
-                        </button>
+                        </article>
                       `;
                     }).join("") || `<div class="module-empty">No hay estudiantes para ese filtro.</div>`}
                   </div>
@@ -2528,9 +2522,11 @@
       .teacher-student-row.selected{outline:3px solid rgba(123,54,235,.25);background:linear-gradient(135deg,#f8f5ff,#eef6ff)}
       .teacher-student-col{display:grid;gap:4px;align-items:center}
       .teacher-student-main{display:flex;gap:12px;align-items:center}
+      .teacher-student-link{display:flex;gap:12px;align-items:center;border:none;background:transparent;padding:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+      .teacher-student-link:focus-visible{outline:2px solid rgba(123,54,235,.35);outline-offset:4px;border-radius:18px}
       .teacher-student-avatar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:900;color:#6d28d9;background:linear-gradient(135deg,#ede9fe,#fde7ff)}
-      .teacher-student-main strong{display:block;color:#284375}
-      .teacher-student-main span,.teacher-row-note,.teacher-detail-head p{color:#5d6a84}
+      .teacher-student-main strong,.teacher-student-link strong{display:block;color:#284375}
+      .teacher-student-main span,.teacher-student-link span,.teacher-row-note,.teacher-detail-head p{color:#5d6a84}
       .teacher-student-side{display:grid;gap:8px}
       .teacher-mini-bars{display:grid;gap:6px}
       .teacher-mini-bar{display:grid;grid-template-columns:32px 1fr;gap:8px;align-items:center}
@@ -2555,30 +2551,36 @@
       .teacher-utility-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
       .classroom-admin-dashboard-v2{width:100%;max-width:none}
       .classroom-dashboard-root{display:block;width:100%}
-      .teacher-shell-wide{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;align-items:start}
-      .teacher-nav-rail{min-height:calc(100vh - 120px);padding:24px 18px;border-radius:30px;background:linear-gradient(180deg,#ffffff,#f8f4ff);box-shadow:0 18px 40px rgba(93,104,152,.12);display:grid;grid-template-rows:auto 1fr auto;gap:22px}
+      .teacher-shell-wide{display:grid;grid-template-columns:168px minmax(0,1fr);gap:20px;align-items:start}
+      .teacher-nav-rail{min-height:calc(100vh - 120px);padding:20px 16px;border-radius:28px;background:linear-gradient(180deg,#ffffff,#f8f4ff);box-shadow:0 18px 40px rgba(93,104,152,.12);display:grid;grid-template-rows:auto 1fr auto;gap:18px}
       .teacher-brand-block{display:grid;gap:4px}
       .teacher-brand-block strong{font-size:1.8rem;color:#6d28d9}
       .teacher-brand-block span,.teacher-rail-footer span{color:#5d6a84}
       .teacher-rail-menu{display:grid;gap:10px}
-      .teacher-rail-link{border:none;background:transparent;color:#52627f;padding:12px 14px;border-radius:16px;text-align:left;font:inherit;font-weight:800}
+      .teacher-rail-link{border:none;background:transparent;color:#52627f;padding:10px 12px;border-radius:14px;text-align:left;font:inherit;font-weight:800}
       .teacher-rail-link.active{background:linear-gradient(135deg,#efe8ff,#eef5ff);color:#6d28d9}
       .teacher-rail-footer{display:grid;gap:4px;padding-top:14px;border-top:1px solid rgba(148,163,184,.12)}
-      .teacher-workspace{display:grid;gap:18px;min-width:0}
+      .teacher-workspace{display:grid;gap:16px;min-width:0}
       .teacher-page-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:6px 4px}
       .teacher-page-head h2{margin:0;color:#284375;font-size:2rem}
       .teacher-page-head p{margin:6px 0 0;color:#5d6a84;max-width:720px}
       .teacher-head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
       .teacher-summary-bar-wide{grid-template-columns:repeat(6,minmax(0,1fr))}
-      .teacher-dashboard-shell-v2{grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start}
-      .teacher-dashboard-shell-v2.detail-open{grid-template-columns:260px minmax(540px,1.3fr) 420px}
-      .teacher-left-column-v2,.teacher-center-column-v2,.teacher-right-column-v2{display:grid;gap:18px;min-width:0;align-self:start}
+      .teacher-dashboard-shell-v2{grid-template-columns:228px minmax(0,1fr);gap:18px;align-items:start}
+      .teacher-dashboard-shell-v2.detail-open{grid-template-columns:228px minmax(620px,1.6fr) 390px}
+      .teacher-left-column-v2,.teacher-center-column-v2,.teacher-right-column-v2{display:grid;gap:16px;min-width:0;align-self:start}
       .teacher-center-column-v2 .module-card,.teacher-right-column-v2 .module-card,.teacher-left-column-v2 .module-card{height:auto}
       .teacher-filter-grid-wide{grid-template-columns:1fr}
       .teacher-activity-grid-wide{grid-template-columns:1fr}
       .teacher-students-card{min-height:calc(100vh - 230px)}
-      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-table-head-v2{grid-template-columns:minmax(280px,1.6fr) 180px 140px 110px 220px}
-      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-row-v2{grid-template-columns:minmax(280px,1.6fr) 180px 140px 110px 220px}
+      .teacher-left-column-v2 .module-card{padding:16px}
+      .teacher-left-column-v2 .module-kicker{font-size:.72rem}
+      .teacher-left-column-v2 .module-row-mini strong{font-size:.9rem}
+      .teacher-left-column-v2 .module-row-mini span{font-size:.82rem}
+      .teacher-left-column-v2 .module-label{font-size:.82rem}
+      .teacher-left-column-v2 .module-input,.teacher-left-column-v2 .module-select{padding:10px 12px}
+      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-table-head-v2{grid-template-columns:minmax(400px,2.2fr) 210px 160px 120px 240px}
+      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-row-v2{grid-template-columns:minmax(400px,2.2fr) 210px 160px 120px 240px}
       .teacher-card-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}
       .teacher-card-head h3{margin:0;color:#284375}
       .teacher-card-head p{margin:6px 0 0;color:#5d6a84}
@@ -2599,7 +2601,7 @@
       .teacher-topic-bar span{display:block;height:10px;border-radius:999px;background:#edf2ff;overflow:hidden}
       .teacher-topic-bar strong{text-align:right;color:#42506b;font-size:.84rem}
       .teacher-recommend-grid{display:grid;gap:10px}
-      .teacher-center-insights{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+      .teacher-center-insights{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
       .teacher-topic-overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
       .teacher-right-column-v2{max-height:calc(100vh - 150px);overflow:auto;padding-right:6px}
       .teacher-right-column-v2.detail-hidden{display:none}

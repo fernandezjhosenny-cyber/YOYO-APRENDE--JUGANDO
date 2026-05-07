@@ -17,6 +17,9 @@
     const app = document.getElementById("app");
     if (!app) return;
 
+    const heroPanel = app.querySelector(".real-card.real-hero .progress-panel");
+    if (heroPanel) heroPanel.remove();
+
     const eyebrow = app.querySelector(".real-brand-copy .eyebrow-main");
     if (eyebrow) eyebrow.textContent = COPY.eyebrow;
 

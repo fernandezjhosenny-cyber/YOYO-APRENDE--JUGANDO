@@ -18,7 +18,6 @@ MANAGED_KEYS = {
     "yoyo_rg_t",
     "yoyo_rg_s",
     "yoyo_rg_p",
-    "yoyo_rg_x",
     "yoyo_rg_u",
     "yoyo_classroom_mgmt_v2",
     "yoyo_owner_teacher_id",

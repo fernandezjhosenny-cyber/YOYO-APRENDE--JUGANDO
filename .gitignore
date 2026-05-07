@@ -11,3 +11,5 @@ chrome-safe-profile/
 edge-headless-profile/
 edge-profile/
 *.log
+
+.vercel
