@@ -1,6 +1,6 @@
 ﻿(function () {
   const CORE_TEACHER_SCRIPTS = [
-    "teacher-console-lite.js?v=20260508-2"
+    "teacher-console-lite.js?v=20260508-3"
   ];
 
   const DEFERRED_GAME_SCRIPTS = [
