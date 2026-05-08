@@ -1992,10 +1992,85 @@
     if (!student) return;
     const efemerides = getTodayEfemerides(student.teacherId);
     const reinforcements = getStudentReinforcements(student.teacherId, studentId);
+    const summary = summarizeStudent(studentId);
+    const topicCards = getTopicMeta().map((topicMeta) => {
+      const topic = summary.byTopic[topicMeta.id] || {
+        title: topicMeta.title,
+        completed: 0,
+        totalActivities: topicMeta.activities.length,
+        totalScore: 0,
+        competencyScores: { C1: 0, C2: 0, C3: 0 },
+      };
+      const topicState = getTopicState(topic);
+      const averageScore = topic.completed ? Math.round(topic.totalScore / Math.max(1, topic.completed)) : 0;
+      return {
+        ...topic,
+        id: topicMeta.id,
+        state: topicState,
+        averageScore,
+      };
+    });
 
     const shell = document.createElement("section");
     shell.className = "classroom-student-shell";
     shell.innerHTML = `
+      <article class="module-card">
+        <div class="module-kicker">Mis notas y competencias</div>
+        <div class="module-grid module-grid-2">
+          <article class="module-card module-card-embedded">
+            <div class="module-kicker">Competencias generales</div>
+            <div class="module-competency-grid">
+              ${["C1", "C2", "C3"].map((key) => `
+                <div class="module-competency-card module-tone-${getCompetencyTone(summary.competencies[key])}">
+                  <strong>${key}</strong>
+                  <span>${summary.competencies[key]}/100</span>
+                  <small>${COMPETENCY_LABELS[key]}</small>
+                </div>
+              `).join("")}
+            </div>
+          </article>
+          <article class="module-card module-card-embedded">
+            <div class="module-kicker">Progreso visible</div>
+            <div class="module-stack">
+              <div class="module-row-mini"><strong>Actividades completadas</strong><span>${summary.completed}/60</span></div>
+              <div class="module-row-mini"><strong>Puntos acumulados</strong><span>${summary.total}</span></div>
+              <div class="module-row-mini"><strong>Temarios trabajados</strong><span>${topicCards.filter((item) => item.completed > 0).length}/${topicCards.length}</span></div>
+            </div>
+          </article>
+        </div>
+      </article>
+
+      <article class="module-card">
+        <div class="module-kicker">Notas por temario</div>
+        <div class="module-hint">Cada temario tiene sus propias notas independientes de C1, C2 y C3.</div>
+        <div class="module-stack">
+          ${topicCards.map((topic) => `
+            <div class="module-topic-score-card">
+              <div class="module-row">
+                <div>
+                  <strong>${escapeHtml(topic.title)}</strong>
+                  <span>${topic.completed}/${topic.totalActivities} actividades · ${topic.averageScore} pts promedio</span>
+                </div>
+                <div class="module-badge">${topic.state.label}</div>
+              </div>
+              <div class="module-row-mini">
+                <strong>Progreso del temario</strong>
+                <span>${Math.round((topic.completed / Math.max(1, topic.totalActivities)) * 100)}%</span>
+              </div>
+              <div class="module-competency-grid">
+                ${["C1", "C2", "C3"].map((key) => `
+                  <div class="module-competency-card module-tone-${getCompetencyTone(topic.competencyScores[key])}">
+                    <strong>${key}</strong>
+                    <span>${topic.competencyScores[key]}/100</span>
+                    <small>${COMPETENCY_LABELS[key]}</small>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+
       ${efemerides.length ? `
         <article class="module-card module-student-banner">
           <div class="module-kicker">Efemerides de hoy</div>

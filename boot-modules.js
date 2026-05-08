@@ -3,30 +3,7 @@
     "teacher-console-lite.js?v=20260508-3"
   ];
 
-  const DEFERRED_GAME_SCRIPTS = [
-    "anuncio-radial-order.js?v=20260505-1",
-    "anuncio-radial-fill.js?v=20260505-1",
-    "anuncio-radial-classify.js?v=20260505-1",
-    "anuncio-radial-memory.js?v=20260505-1",
-    "anuncio-radial-detective.js?v=20260505-1",
-    "anuncio-radial-target.js?v=20260505-1",
-    "anuncio-radial-cubes.js?v=20260505-1",
-    "anuncio-radial-pair.js?v=20260505-1",
-    "anuncio-radial-wordsearch.js?v=20260505-1",
-    "anuncio-radial-timeline.js?v=20260505-1",
-    "anuncio-radial-studio.js?v=20260505-1",
-    "oda-feedback-cleanup.js?v=20260501-1",
-    "oda-order.js?v=20260501-1",
-    "oda-fill.js?v=20260501-1",
-    "oda-classify.js?v=20260501-1",
-    "oda-memory.js?v=20260501-1",
-    "oda-detective-simple.js?v=20260502-1",
-    "oda-cubes.js?v=20260502-1",
-    "oda-pair.js?v=20260502-1",
-    "oda-wordsearch.js?v=20260502-1",
-    "oda-timeline.js?v=20260502-1",
-    "oda-studio.js?v=20260504-1"
-  ];
+  const DEFERRED_GAME_SCRIPTS = [];
 
   let teacherScriptsLoaded = false;
   let deferredGamesLoaded = false;
@@ -94,10 +71,7 @@
 
   async function boot() {
     const session = readSession();
-    if (!session) {
-      ensureDeferredGames(900);
-      return;
-    }
+    if (!session) return;
 
     if (session.role === "teacher") {
       await ensureTeacherScripts();
