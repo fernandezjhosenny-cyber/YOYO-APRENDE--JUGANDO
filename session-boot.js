@@ -24,8 +24,16 @@
     });
     try {
       const url = new URL(window.location.href);
+      let changed = false;
       if (url.searchParams.get("owner") === "1") {
         url.searchParams.delete("owner");
+        changed = true;
+      }
+      if (url.searchParams.get("auth") === "1") {
+        url.searchParams.delete("auth");
+        changed = true;
+      }
+      if (changed) {
         const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "") + url.hash;
         window.history.replaceState({}, "", next);
       }
@@ -45,8 +53,16 @@
 
   try {
     const url = new URL(window.location.href);
+    let changed = false;
     if (url.searchParams.get("owner") === "1") {
       url.searchParams.delete("owner");
+      changed = true;
+    }
+    if (url.searchParams.get("auth") === "1") {
+      url.searchParams.delete("auth");
+      changed = true;
+    }
+    if (changed) {
       const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : "") + url.hash;
       window.history.replaceState({}, "", next);
     }

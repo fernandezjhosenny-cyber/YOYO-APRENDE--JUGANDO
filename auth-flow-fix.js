@@ -57,26 +57,16 @@
       .replace(/\s+/g, " ");
   }
 
-  function rerunRealGames() {
-    const url = new URL(window.location.href);
-    url.searchParams.set("ts", Date.now().toString());
-    window.location.href = url.toString();
-  }
-
   function startSession(session) {
     const serialized = JSON.stringify(session);
     localStorage.setItem("yoyo_rg_x", serialized);
     try {
       sessionStorage.setItem("yoyo_auth_handoff", serialized);
     } catch {}
-    app.innerHTML = `
-      <section class="real-shell">
-        <article class="real-card real-hero">
-          <div class="real-msg success auth-flow-fix-msg">Entrando a tu panel...</div>
-        </article>
-      </section>
-    `;
-    window.setTimeout(rerunRealGames, 30);
+    const url = new URL(window.location.href);
+    url.searchParams.set("ts", Date.now().toString());
+    url.searchParams.set("auth", "1");
+    window.location.replace(url.toString());
   }
 
   function wireTeacherRegister() {

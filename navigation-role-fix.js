@@ -105,11 +105,126 @@
     });
   }
 
+  function ensureCompetencyStyles() {
+    if (document.getElementById("yoyoCompetencyInfoStyle")) return;
+    const style = document.createElement("style");
+    style.id = "yoyoCompetencyInfoStyle";
+    style.textContent = `
+      .yoyo-competency-toggle{
+        border:none;
+        border-radius:999px;
+        padding:10px 16px;
+        font:inherit;
+        font-weight:800;
+        cursor:pointer;
+        background:linear-gradient(135deg,#fff4cf,#ffe7a3);
+        color:#8a6311;
+        box-shadow:0 10px 22px rgba(202,168,84,.18);
+      }
+      .yoyo-competency-toggle.active{
+        background:linear-gradient(135deg,#1f70ff,#7b36eb);
+        color:#fff;
+        box-shadow:0 14px 28px rgba(75,85,180,.24);
+      }
+      .yoyo-competency-card{
+        margin-top:12px;
+        padding:16px 18px;
+        border-radius:22px;
+        background:linear-gradient(135deg,#f6f0ff,#eef7ff);
+        box-shadow:0 14px 28px rgba(93,104,152,.12);
+        display:grid;
+        gap:8px;
+      }
+      .yoyo-competency-card.hidden{display:none}
+      .yoyo-competency-card strong{
+        color:#6d28d9;
+        font-size:1rem;
+      }
+      .yoyo-competency-card p{
+        margin:0;
+        color:#42506b;
+        line-height:1.6;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function wireCompetencyInfo(root) {
+    const session = getSession();
+    if (!session || session.role !== "student") return;
+
+    const pills = root.querySelector(".real-student .real-pills");
+    if (!pills) return;
+
+    ensureCompetencyStyles();
+
+    const definitions = {
+      C1: {
+        title: "C1: Competencia Comunicativa",
+        text: "Comunica sus ideas, pensamientos y sentimientos con fluidez, mediante un modelo textual conveniente, en variadas situaciones y contextos, con el fin de demostrar conocimiento y uso adecuado de su lengua, a través de diferentes medios y recursos."
+      },
+      C2: {
+        title: "C2: Pensamiento Lógico, Creativo y Crítico + Resolución de Problemas + Científica y Tecnológica",
+        text: "Elabora textos orales y escritos con creatividad y criticidad según las conclusiones de los problemas abordados en investigaciones, y las publica a través de medios variados."
+      },
+      C3: {
+        title: "C3: Ética y Ciudadana + Ambiental y de la Salud + Desarrollo Personal y Espiritual",
+        text: "Caracteriza problemas sociales diversos, a través de textos orales y escritos, con la finalidad de solucionarlos, canalizando emociones, sentimientos y relaciones humanas, así como la preservación de la salud y el ambiente, mediante el uso de recursos diversos."
+      }
+    };
+
+    let card = root.querySelector(".yoyo-competency-card");
+    if (!card) {
+      card = document.createElement("article");
+      card.className = "yoyo-competency-card hidden";
+      card.innerHTML = "<strong></strong><p></p>";
+      pills.insertAdjacentElement("afterend", card);
+    }
+
+    [...pills.querySelectorAll(".real-pill, .real-chip")].forEach((node) => {
+      const key = (node.textContent || "").trim();
+      if (!definitions[key]) return;
+      if (node.dataset.competencyFixed === "1") return;
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "yoyo-competency-toggle";
+      button.dataset.competency = key;
+      button.dataset.competencyFixed = "1";
+      button.textContent = key;
+      node.replaceWith(button);
+    });
+
+    pills.querySelectorAll(".yoyo-competency-toggle").forEach((button) => {
+      if (button.dataset.competencyBound === "1") return;
+      button.dataset.competencyBound = "1";
+      button.addEventListener("click", () => {
+        const next = button.dataset.competency || "";
+        const current = root.dataset.activeCompetency || "";
+
+        pills.querySelectorAll(".yoyo-competency-toggle").forEach((item) => item.classList.remove("active"));
+
+        if (current === next) {
+          delete root.dataset.activeCompetency;
+          card.classList.add("hidden");
+          return;
+        }
+
+        root.dataset.activeCompetency = next;
+        button.classList.add("active");
+        card.querySelector("strong").textContent = definitions[next].title;
+        card.querySelector("p").textContent = definitions[next].text;
+        card.classList.remove("hidden");
+      });
+    });
+  }
+
   function enhance() {
     applyRoleSeparation(app);
     wireLogoutButtons(app);
     wireBackButtons(app);
     applyCopyFixes(app);
+    wireCompetencyInfo(app);
   }
 
   enhance();

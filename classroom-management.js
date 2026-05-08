@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   if (window.location.protocol === "file:") {
     return;
   }
@@ -88,8 +88,8 @@
   };
 
   const ORTHOGRAPHY_REINFORCEMENTS = [
-    { id: "orto-mayuscula", title: "Mayuscula inicial", clue: "Recuerda la mayuscula inicial.", prompt: "Selecciona la opcion correcta.", options: ["mama", "Mamá", "mamA"], answer: "Mamá" },
-    { id: "orto-tilde", title: "Palabras con tilde", clue: "Busca la palabra con tilde correcta.", prompt: "Selecciona la palabra bien escrita.", options: ["cancion", "cancíon", "canción"], answer: "canción" },
+    { id: "orto-mayuscula", title: "Mayuscula inicial", clue: "Recuerda la mayuscula inicial.", prompt: "Selecciona la opcion correcta.", options: ["mama", "MamÃ¡", "mamA"], answer: "MamÃ¡" },
+    { id: "orto-tilde", title: "Palabras con tilde", clue: "Busca la palabra con tilde correcta.", prompt: "Selecciona la palabra bien escrita.", options: ["cancion", "cancÃ­on", "canciÃ³n"], answer: "canciÃ³n" },
     { id: "orto-rr", title: "Sonido fuerte", clue: "Observa la letra que falta.", prompt: "Completa la palabra: ca__o", options: ["r", "rr", "rrr"], answer: "rr" },
   ];
 
@@ -493,17 +493,17 @@
       notes.push(`Necesita reforzar el temario ${weakTopic.title}.`);
     }
     if (lowestKey === "C1") {
-      notes.push("Presenta dificultad en la competencia C1: comprensión y comunicación del texto.");
+      notes.push("Presenta dificultad en la competencia C1: comprensiÃ³n y comunicaciÃ³n del texto.");
     } else if (lowestKey === "C2") {
-      notes.push("Presenta dificultad en la competencia C2: análisis y relación de ideas.");
+      notes.push("Presenta dificultad en la competencia C2: anÃ¡lisis y relaciÃ³n de ideas.");
     } else {
-      notes.push("Necesita apoyo en la competencia C3: sensibilidad, valores y expresión emocional.");
+      notes.push("Necesita apoyo en la competencia C3: sensibilidad, valores y expresiÃ³n emocional.");
     }
     if (weakLabels.some((label) => /Ortografia|Vocabulario/i.test(label))) {
-      notes.push("Se recomienda asignar refuerzo de ortografía y vocabulario.");
+      notes.push("Se recomienda asignar refuerzo de ortografÃ­a y vocabulario.");
     }
     if (weakLabels.some((label) => /Clasificacion|Relacion de ideas|Comprension/i.test(label))) {
-      notes.push("Se recomienda repetir los juegos de clasificación y relación de ideas.");
+      notes.push("Se recomienda repetir los juegos de clasificaciÃ³n y relaciÃ³n de ideas.");
     }
     return [...new Set(notes)].slice(0, 4);
   }
@@ -572,7 +572,7 @@
       notes.push(`El estudiante presenta dificultad en ${weakest.weakest.key} del temario '${weakest.title}'.`);
     }
     if (strongest && strongest.strongest.score >= 80) {
-      notes.push(`Buen desempeño en ${strongest.strongest.key} del temario '${strongest.title}'.`);
+      notes.push(`Buen desempeÃ±o en ${strongest.strongest.key} del temario '${strongest.title}'.`);
     }
     return notes;
   }
@@ -706,7 +706,7 @@
                 <div class="module-row">
                   <div>
                     <strong>${escapeHtml(student.name)}</strong>
-                    <span>${weak.length ? weak.map((item) => `${item.label} (${item.count})`).join(" · ") : "Sin debilidades frecuentes"}</span>
+                    <span>${weak.length ? weak.map((item) => `${item.label} (${item.count})`).join(" Â· ") : "Sin debilidades frecuentes"}</span>
                   </div>
                 </div>
               `;
@@ -731,12 +731,12 @@
                     const cfg = getActivityConfig(teacherId, activity.id);
                     const endAt = cfg.startedAt ? cfg.startedAt + cfg.minutes * 60000 : 0;
                     const live = cfg.enabled && endAt > Date.now();
-                    const status = !cfg.enabled ? "Bloqueada" : live ? `Activa · ${formatRemaining(endAt - Date.now())}` : "Tiempo vencido";
+                    const status = !cfg.enabled ? "Bloqueada" : live ? `Activa Â· ${formatRemaining(endAt - Date.now())}` : "Tiempo vencido";
                     return `
                       <div class="module-activity-row">
                         <div>
                           <strong>${activity.number}. ${activity.title}</strong>
-                          <span>${activity.competencies.join(", ")} · ${status}</span>
+                          <span>${activity.competencies.join(", ")} Â· ${status}</span>
                         </div>
                         <div class="module-actions-inline">
                           <select data-activity-minutes="${activity.id}" class="module-select">
@@ -760,7 +760,7 @@
         <div class="module-stack">
           ${summary.students.map(({ student, summary: studentSummary }) => `
             <details class="module-topic module-student-profile">
-              <summary>${escapeHtml(student.name)} <span>${studentSummary.completed}/60 actividades · ${studentSummary.total} pts</span></summary>
+              <summary>${escapeHtml(student.name)} <span>${studentSummary.completed}/60 actividades Â· ${studentSummary.total} pts</span></summary>
               <div class="module-grid module-grid-2">
                 <article class="module-card module-card-embedded">
                   <div class="module-kicker">Perfil del estudiante</div>
@@ -775,13 +775,13 @@
                     <div class="module-row">
                       <div>
                         <strong>Avance general</strong>
-                        <span>${studentSummary.completed}/60 actividades completadas · ${studentSummary.total} puntos acumulados</span>
+                        <span>${studentSummary.completed}/60 actividades completadas Â· ${studentSummary.total} puntos acumulados</span>
                       </div>
                     </div>
                     <div class="module-row">
                       <div>
                         <strong>Competencias globales</strong>
-                        <span>C1: ${studentSummary.competencies.C1} · C2: ${studentSummary.competencies.C2} · C3: ${studentSummary.competencies.C3}</span>
+                        <span>C1: ${studentSummary.competencies.C1} Â· C2: ${studentSummary.competencies.C2} Â· C3: ${studentSummary.competencies.C3}</span>
                       </div>
                     </div>
                   </div>
@@ -801,7 +801,7 @@
                       <div class="module-row">
                         <div>
                           <strong>${escapeHtml(topic.title)}</strong>
-                          <span>${topic.completed}/${topic.totalActivities} actividades · ${topic.completed ? Math.round(topic.totalScore / Math.max(1, topic.completed)) : 0} pts promedio</span>
+                          <span>${topic.completed}/${topic.totalActivities} actividades Â· ${topic.completed ? Math.round(topic.totalScore / Math.max(1, topic.completed)) : 0} pts promedio</span>
                         </div>
                       </div>
                       <div class="module-row-mini">
@@ -870,7 +870,7 @@
               <div class="module-row">
                 <div>
                   <strong>${escapeHtml(item.title)}</strong>
-                  <span>${item.date} · ${escapeHtml(item.description)}</span>
+                  <span>${item.date} Â· ${escapeHtml(item.description)}</span>
                 </div>
                 <div class="module-actions-inline">
                   <button class="module-btn ghost" type="button" data-efemeride-edit="${item.id}">Editar</button>
@@ -985,7 +985,7 @@
     section.className = "classroom-admin-shell classroom-admin-dashboard";
     section.innerHTML = `
       <div class="module-summary-bar">
-        <div class="module-summary-pill"><strong>${escapeHtml(teacher?.code || "Sin codigo")}</strong><span>Codigo unico de clase</span></div>
+        <div class="module-summary-pill"><strong>${escapeHtml(teacher?.code || "Sin código")}</strong><span>Codigo unico de clase</span></div>
         <div class="module-summary-pill"><strong>${summary.students.length}</strong><span>Total de estudiantes</span></div>
         <div class="module-summary-pill"><strong>${activeActivities}</strong><span>Actividades activas</span></div>
         <div class="module-summary-pill"><strong>${averageGeneral}/100</strong><span>Promedio general</span></div>
@@ -1000,7 +1000,7 @@
               <div class="module-row">
                 <div>
                   <strong>Codigo de clase</strong>
-                  <span>${escapeHtml(teacher?.code || "Sin codigo")} · Escuela ${escapeHtml(teacher?.school || "")}</span>
+                  <span>${escapeHtml(teacher?.code || "Sin código")} Â· Escuela ${escapeHtml(teacher?.school || "")}</span>
                 </div>
                 <div class="module-badge">${summary.students.length} alumnos</div>
               </div>
@@ -1163,7 +1163,7 @@
                 <div class="module-row">
                   <div>
                     <strong>${escapeHtml(item.title)}</strong>
-                    <span>${item.date} · ${escapeHtml(item.description)}</span>
+                    <span>${item.date} Â· ${escapeHtml(item.description)}</span>
                   </div>
                   <div class="module-actions-inline">
                     <button class="module-btn ghost" type="button" data-efemeride-edit="${item.id}">Editar</button>
@@ -1234,7 +1234,7 @@
               <div class="teacher-detail-head">
                 <div>
                   <h3>${escapeHtml(selectedStudent.name)}</h3>
-                  <p>${progressPercent(selectedSummary)}% de progreso general · ${selectedSummary.total} puntos acumulados</p>
+                  <p>${progressPercent(selectedSummary)}% de progreso general Â· ${selectedSummary.total} puntos acumulados</p>
                 </div>
                 <span class="module-badge">${getPerformanceState(selectedSummary).label}</span>
               </div>
@@ -1399,7 +1399,7 @@
               <div class="module-row">
                 <div>
                   <strong>${escapeHtml(item.title)}</strong>
-                  <span>${item.date} · ${escapeHtml(item.description)}</span>
+                  <span>${item.date} Â· ${escapeHtml(item.description)}</span>
                 </div>
                 <div class="module-actions-inline">
                   <button class="module-btn ghost" type="button" data-efemeride-edit="${item.id}">Editar</button>
@@ -1554,7 +1554,7 @@
             </div>
             <div class="teacher-head-actions">
               <button class="module-btn ghost" type="button" data-owner-home>Acceso propietaria</button>
-              <button class="module-btn ghost" type="button" data-copy-code="${escapeHtml(teacher?.code || "Sin codigo")}">Copiar codigo</button>
+              <button class="module-btn ghost" type="button" data-copy-code="${escapeHtml(teacher?.code || "Sin código")}">Copiar código</button>
               <button class="module-btn" type="button" data-copy-link="${escapeHtml(shareLink)}">Copiar link de clase</button>
               <button class="module-btn" type="button" data-export-scores>Descargar Excel</button>
               <div class="module-badge">${TOPICS.length} temarios</div>
@@ -1562,22 +1562,22 @@
           </div>
 
           <div class="module-summary-bar teacher-summary-bar-wide" data-section-target="summary">
-            <div class="module-summary-pill"><strong>${escapeHtml(teacher?.code || "Sin codigo")}</strong><span>Codigo de clase · link compartible</span></div>
+            <div class="module-summary-pill"><strong>${escapeHtml(teacher?.code || "Sin código")}</strong><span>Código de clase · link compartible</span></div>
             <div class="module-summary-pill"><strong>${summary.students.length}</strong><span>Total de estudiantes</span></div>
             <div class="module-summary-pill"><strong>${activeActivities}</strong><span>Actividades activas</span></div>
             <div class="module-summary-pill"><strong>${averageGeneral}%</strong><span>Promedio general</span></div>
             <div class="module-summary-pill"><strong>${averageMinutes || 0} min</strong><span>Tiempo promedio</span></div>
-            <div class="module-summary-pill"><strong>${averageScore}%</strong><span>Precision promedio</span></div>
+            <div class="module-summary-pill"><strong>${averageScore}%</strong><span>Precisión promedio</span></div>
           </div>
 
           <div class="teacher-dashboard-shell teacher-dashboard-shell-v2 ${selectedStudent && selectedSummary ? "detail-open" : ""}">
             <div class="teacher-left-column teacher-left-column-v2">
               <article class="module-card" data-section-target="summary">
-                <div class="module-kicker">Accesos rapidos</div>
+                <div class="module-kicker">Accesos rápidos</div>
                 <div class="module-stack teacher-sequence-card">
-                  <div class="module-row-mini"><strong>Codigo</strong><span>${escapeHtml(teacher?.code || "Sin codigo")}</span></div>
+                  <div class="module-row-mini"><strong>Código</strong><span>${escapeHtml(teacher?.code || "Sin código")}</span></div>
                   <div class="module-row-mini"><strong>Propietaria</strong><span>Tu acceso queda guardado en este equipo.</span></div>
-                  <div class="module-row-mini"><strong>Exportacion</strong><span>Descarga el reporte por alumno, juego y puntuacion.</span></div>
+                  <div class="module-row-mini"><strong>Exportación</strong><span>Descarga el reporte por alumno, juego y puntuación.</span></div>
                 </div>
               </article>
 
@@ -1717,7 +1717,7 @@
                     <div class="module-row">
                       <div>
                         <strong>${escapeHtml(item.title)}</strong>
-                        <span>${item.date} · ${escapeHtml(item.description)}</span>
+                        <span>${item.date} Â· ${escapeHtml(item.description)}</span>
                       </div>
                       <div class="module-actions-inline">
                         <button class="module-btn ghost" type="button" data-efemeride-edit="${item.id}">Editar</button>
@@ -1838,7 +1838,7 @@
                     <div>
                       <div class="module-kicker">Detalle del estudiante</div>
                       <h3>${escapeHtml(selectedStudent.name)}</h3>
-                      <p>${progressPercent(selectedSummary)}% de progreso general · ${selectedSummary.total} puntos acumulados</p>
+                      <p>${progressPercent(selectedSummary)}% de progreso general Â· ${selectedSummary.total} puntos acumulados</p>
                     </div>
                     <div class="teacher-head-actions">
                       <span class="module-badge">${getPerformanceState(selectedSummary).label}</span>
@@ -1885,7 +1885,7 @@
                         <div class="module-row">
                           <div>
                             <strong>${escapeHtml(topic.title)}</strong>
-                            <span>${topic.completed}/${topic.totalActivities} actividades · ${Math.round((topic.completed / Math.max(1, topic.totalActivities)) * 100)}% progreso</span>
+                            <span>${topic.completed}/${topic.totalActivities} actividades Â· ${Math.round((topic.completed / Math.max(1, topic.totalActivities)) * 100)}% progreso</span>
                           </div>
                           <div class="module-badge">${getTopicState(topic).label}</div>
                         </div>
@@ -2555,8 +2555,8 @@
       .teacher-utility-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
       .classroom-admin-dashboard-v2{width:100%;max-width:none}
       .classroom-dashboard-root{display:block;width:100%}
-      .teacher-shell-wide{display:grid;grid-template-columns:168px minmax(0,1fr);gap:20px;align-items:start}
-      .teacher-nav-rail{min-height:calc(100vh - 120px);padding:20px 16px;border-radius:28px;background:linear-gradient(180deg,#ffffff,#f8f4ff);box-shadow:0 18px 40px rgba(93,104,152,.12);display:grid;grid-template-rows:auto 1fr auto;gap:18px}
+      .teacher-shell-wide{display:grid;grid-template-columns:190px minmax(0,1fr);gap:24px;align-items:start}
+      .teacher-nav-rail{min-height:calc(100vh - 120px);padding:22px 18px;border-radius:28px;background:linear-gradient(180deg,#ffffff,#f8f4ff);box-shadow:0 18px 40px rgba(93,104,152,.12);display:grid;grid-template-rows:auto 1fr auto;gap:20px}
       .teacher-brand-block{display:grid;gap:4px}
       .teacher-brand-block strong{font-size:1.8rem;color:#6d28d9}
       .teacher-brand-block span,.teacher-rail-footer span{color:#5d6a84}
@@ -2569,27 +2569,27 @@
       .teacher-page-head h2{margin:0;color:#284375;font-size:2rem}
       .teacher-page-head p{margin:6px 0 0;color:#5d6a84;max-width:720px}
       .teacher-head-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
-      .teacher-summary-bar-wide{grid-template-columns:repeat(6,minmax(0,1fr))}
-      .teacher-dashboard-shell-v2{grid-template-columns:228px minmax(0,1fr);gap:18px;align-items:start}
-      .teacher-dashboard-shell-v2.detail-open{grid-template-columns:228px minmax(620px,1.6fr) 390px}
+      .teacher-summary-bar-wide{grid-template-columns:repeat(6,minmax(150px,1fr));gap:16px}
+      .teacher-dashboard-shell-v2{grid-template-columns:290px minmax(0,1fr);gap:20px;align-items:start}
+      .teacher-dashboard-shell-v2.detail-open{grid-template-columns:290px minmax(540px,1.4fr) 420px}
       .teacher-left-column-v2,.teacher-center-column-v2,.teacher-right-column-v2{display:grid;gap:16px;min-width:0;align-self:start}
       .teacher-center-column-v2 .module-card,.teacher-right-column-v2 .module-card,.teacher-left-column-v2 .module-card{height:auto}
       .teacher-filter-grid-wide{grid-template-columns:1fr}
       .teacher-activity-grid-wide{grid-template-columns:1fr}
-      .teacher-students-card{min-height:calc(100vh - 230px)}
-      .teacher-left-column-v2 .module-card{padding:16px}
+      .teacher-students-card{min-height:0}
+      .teacher-left-column-v2 .module-card{padding:18px}
       .teacher-left-column-v2 .module-kicker{font-size:.72rem}
       .teacher-left-column-v2 .module-row-mini strong{font-size:.9rem}
       .teacher-left-column-v2 .module-row-mini span{font-size:.82rem}
       .teacher-left-column-v2 .module-label{font-size:.82rem}
       .teacher-left-column-v2 .module-input,.teacher-left-column-v2 .module-select{padding:10px 12px}
-      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-table-head-v2{grid-template-columns:minmax(400px,2.2fr) 210px 160px 120px 240px}
-      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-row-v2{grid-template-columns:minmax(400px,2.2fr) 210px 160px 120px 240px}
+      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-table-head-v2{grid-template-columns:minmax(460px,2.6fr) 220px 180px 120px 250px}
+      .teacher-dashboard-shell-v2:not(.detail-open) .teacher-student-row-v2{grid-template-columns:minmax(460px,2.6fr) 220px 180px 120px 250px}
       .teacher-card-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}
       .teacher-card-head h3{margin:0;color:#284375}
       .teacher-card-head p{margin:6px 0 0;color:#5d6a84}
-      .teacher-student-table-head-v2{grid-template-columns:minmax(240px,1.35fr) 150px 120px 90px 180px}
-      .teacher-student-row-v2{grid-template-columns:minmax(240px,1.35fr) 150px 120px 90px 180px;padding:16px 18px}
+      .teacher-student-table-head-v2{grid-template-columns:minmax(280px,1.5fr) 160px 130px 100px 190px}
+      .teacher-student-row-v2{grid-template-columns:minmax(280px,1.5fr) 160px 130px 100px 190px;padding:18px 20px}
       .teacher-student-row-v2 strong{color:#284375}
       .teacher-progress-line{width:100%;height:8px;border-radius:999px;background:#edf2ff;overflow:hidden;margin-top:6px}
       .teacher-progress-line .module-bar-fill{height:100%}
@@ -2605,8 +2605,8 @@
       .teacher-topic-bar span{display:block;height:10px;border-radius:999px;background:#edf2ff;overflow:hidden}
       .teacher-topic-bar strong{text-align:right;color:#42506b;font-size:.84rem}
       .teacher-recommend-grid{display:grid;gap:10px}
-      .teacher-center-insights{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
-      .teacher-topic-overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+      .teacher-center-insights{display:grid;grid-template-columns:1.08fr .92fr;gap:16px}
+      .teacher-topic-overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
       .teacher-right-column-v2{max-height:calc(100vh - 150px);overflow:auto;padding-right:6px}
       .teacher-right-column-v2.detail-hidden{display:none}
       .teacher-right-column-v2 .module-card{scroll-margin-top:20px}
@@ -2641,3 +2641,4 @@
   window.addEventListener("storage", scheduleEnhance);
   scheduleEnhance();
 })();
+
