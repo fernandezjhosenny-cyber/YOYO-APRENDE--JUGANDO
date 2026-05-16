@@ -141,6 +141,11 @@
     return match ? `Juego ${match[2]}` : "Actividad";
   }
 
+  function levelKey(value) {
+    const match = String(value || "").match(/(\d+)/);
+    return match ? `nivel-${match[1]}` : "nivel-1";
+  }
+
   function normalizePercentScore(value) {
     const raw = Number(value || 0) || 0;
     return raw <= 10 ? Math.max(0, Math.min(100, raw * 10)) : Math.max(0, Math.min(100, Math.round(raw)));
@@ -161,8 +166,28 @@
     return `Necesita refuerzo en ${competency} de ${topicTitle}.`;
   }
 
+  function emptyAttemptSummary() {
+    return {
+      rows: [],
+      exhaustedLevels: 0,
+      totalAttempts: 0
+    };
+  }
+
+  function attemptHint(summary) {
+    const lockedRows = (summary?.attemptSummary?.rows || []).filter((row) => row.locked).slice(0, 2);
+    if (!lockedRows.length) return "Sin niveles agotados.";
+    return lockedRows
+      .map((row) => `${getTopicTitle(row.topicId)} · ${gameLabel(row.gameId)} · ${row.levelId}`)
+      .join(" | ");
+  }
+
   function buildStudentSummary(student, teacher, rawProgress) {
     const helper = window.__YOYO_PROGRESS__;
+    const attemptsHelper = window.__YOYO_ATTEMPTS__;
+    const attemptSummary = attemptsHelper && typeof attemptsHelper.summarizeStudent === "function"
+      ? attemptsHelper.summarizeStudent(student.id)
+      : emptyAttemptSummary();
     if (helper && typeof helper.summarizeStudentProgress === "function") {
       const snapshot = helper.summarizeStudentProgress(student, rawProgress || {});
       const gameRows = (snapshot.historyRows || []).map((row) => ({
@@ -218,8 +243,9 @@
         gameRows,
         historyRows: snapshot.historyRows || [],
         bestActivities: snapshot.bestActivities || [],
+        attemptSummary,
         recommendation: snapshot.recommendation || (weakestTopic ? weakestTopic.recommendation : "Invitar a completar su primera actividad."),
-        riskScore: (100 - Number(snapshot.averagePercent || 0)) + Number(snapshot.pendingGames || 0) + Number(snapshot.failedAttempts || 0) * 6 + Math.max(0, 50 - Number(snapshot.totalPoints || 0))
+        riskScore: (100 - Number(snapshot.averagePercent || 0)) + Number(snapshot.pendingGames || 0) + Number(snapshot.failedAttempts || 0) * 6 + Number(attemptSummary.exhaustedLevels || 0) * 8 + Math.max(0, 50 - Number(snapshot.totalPoints || 0))
       };
     }
 
@@ -315,8 +341,9 @@
       strongestTopic,
       weakestTopic,
       gameRows,
+      attemptSummary,
       recommendation,
-      riskScore
+      riskScore: riskScore + Number(attemptSummary.exhaustedLevels || 0) * 8
     };
   }
 
@@ -503,7 +530,9 @@
       "Nota C3",
       "Promedio",
       "Fecha de realizacion",
-      "Estado"
+      "Estado",
+      "Intentos usados",
+      "Nivel agotado"
     ]];
 
     const byTopic = new Map();
@@ -519,6 +548,11 @@
         if (state.competency !== "all" && !String(rowCompetency).includes(state.competency)) return;
         if (state.status !== "all" && row.status !== state.status) return;
         const topicCard = summary.topicCards.find((item) => item.id === row.topicId);
+        const attemptRow = (summary.attemptSummary?.rows || []).find((item) =>
+          item.topicId === row.topicId &&
+          item.gameId === (row.activityId || row.id) &&
+          item.levelId === levelKey(row.level)
+        ) || null;
         byTopic.get(row.topicId)?.push([
           summary.student.name,
           summary.student.code || "",
@@ -535,7 +569,9 @@
           topicCard?.competencies?.C3 ?? 0,
           topicCard?.progress ?? 0,
           row.date ? formatDate(row.date) : (row.rawDate || row.date || ""),
-          row.status
+          row.status,
+          attemptRow?.attemptsUsed ?? 0,
+          attemptRow?.locked ? "Si" : "No"
         ]);
       });
     });
@@ -582,6 +618,7 @@
       ["Temario con mejor avance", summary.strongestTopic?.title || "Sin datos", "Progreso", `${summary.strongestTopic?.progress || 0}/100`, "", "", "", "", "", "", "", "", "", "", ""],
       ["Debilidades", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
       ["Temario a reforzar", summary.weakestTopic?.title || "Sin datos", "Progreso", `${summary.weakestTopic?.progress || 0}/100`, "", "", "", "", "", "", "", "", "", "", ""],
+      ["Intentos usados", summary.attemptSummary?.totalAttempts || 0, "Niveles agotados", summary.attemptSummary?.exhaustedLevels || 0, "", "", "", "", "", "", "", "", "", "", ""],
       ["Recomendacion general", summary.recommendation, "", "", "", "", "", "", "", "", "", "", "", "", ""],
       ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
       ["Mejor puntuacion por actividad", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
@@ -598,6 +635,26 @@
         row.attempts,
         row.pendingLevels,
         row.status,
+        "", "", "", "", "", "", ""
+      ]);
+    });
+
+    rows.push(
+      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Intentos por nivel", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Temario", "Juego", "Nivel", "Intentos usados", "Bloqueado", "Mejor puntuacion", "Mejor porcentaje", "Ultima actualizacion", "", "", "", "", "", "", ""]
+    );
+
+    (summary.attemptSummary?.rows || []).forEach((row) => {
+      rows.push([
+        getTopicTitle(row.topicId),
+        gameLabel(row.gameId),
+        row.levelId,
+        row.attemptsUsed,
+        row.locked ? "Si" : "No",
+        row.bestScore,
+        `${row.bestPercent || 0}%`,
+        row.updatedAt ? formatDate(row.updatedAt) : "",
         "", "", "", "", "", "", ""
       ]);
     });
@@ -859,6 +916,8 @@
                             <small>Seccion: ${escapeHtml(item.section)}</small>
                             <small>Ultimo acceso: ${escapeHtml(item.lastAccess)}</small>
                             <small>Ultimo temario: ${escapeHtml(item.lastTopicSummary?.title || "Sin actividad")}</small>
+                            <small>Intentos usados: ${item.attemptSummary?.totalAttempts || 0} · Niveles agotados: ${item.attemptSummary?.exhaustedLevels || 0}</small>
+                            <small>Agotados: ${escapeHtml(attemptHint(item))}</small>
                           </div>
                         </div>
                         <div class="teacher-lite-topic-summary">
