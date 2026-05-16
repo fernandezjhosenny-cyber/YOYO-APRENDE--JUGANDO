@@ -40,6 +40,7 @@
   let flushTimer = null;
   let refreshTimer = null;
   let refreshing = false;
+  let lastUpdatedAt = Number(snapshot.updatedAt || 0) || 0;
 
   function rawGet(key) {
     return original.getItem.call(window.localStorage, key);
@@ -55,12 +56,32 @@
 
   function applySnapshot(data) {
     const keys = data && data.keys && typeof data.keys === "object" ? data.keys : {};
+    const updatedAt = Number(data && data.updatedAt || 0) || 0;
+    if (updatedAt && updatedAt < lastUpdatedAt) {
+      return false;
+    }
+    let changed = false;
     SHARED_KEYS.forEach((key) => {
-      if (typeof keys[key] === "string") {
-        mirror.set(key, keys[key]);
-        rawSet(key, keys[key]);
+      const nextValue = typeof keys[key] === "string" ? keys[key] : null;
+      const currentValue = mirror.has(key) ? mirror.get(key) : rawGet(key);
+      if (nextValue === null) {
+        if (typeof currentValue === "string") {
+          mirror.delete(key);
+          rawRemove(key);
+          changed = true;
+        }
+        return;
+      }
+      if (currentValue !== nextValue) {
+        mirror.set(key, nextValue);
+        rawSet(key, nextValue);
+        changed = true;
       }
     });
+    if (updatedAt) {
+      lastUpdatedAt = Math.max(lastUpdatedAt, updatedAt);
+    }
+    return changed;
   }
 
   function seedFromLocalIfMissing(data) {
@@ -119,7 +140,7 @@
   }
 
   function refreshFromServer() {
-    if (refreshing) return;
+    if (refreshing || document.hidden) return;
     refreshing = true;
     fetch("/api/shared-storage", {
       method: "GET",
@@ -136,6 +157,22 @@
       .finally(() => {
         refreshing = false;
       });
+  }
+
+  function clearRefreshTimer() {
+    if (refreshTimer) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+    }
+  }
+
+  function scheduleRefresh(delay = 30000) {
+    clearRefreshTimer();
+    if (document.hidden) return;
+    refreshTimer = setTimeout(() => {
+      refreshFromServer();
+      scheduleRefresh(30000);
+    }, delay);
   }
 
   applySnapshot(snapshot);
@@ -186,9 +223,24 @@
 
   window.addEventListener("focus", () => {
     refreshFromServer();
+    scheduleRefresh(30000);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearRefreshTimer();
+      return;
+    }
+    refreshFromServer();
+    scheduleRefresh(30000);
   });
 
   window.addEventListener("beforeunload", () => {
+    clearRefreshTimer();
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
     if (!queue.size) return;
     const payload = JSON.stringify(buildPayload());
     try {
@@ -200,7 +252,7 @@
     } catch {}
   });
 
-  refreshTimer = setInterval(refreshFromServer, 4000);
+  scheduleRefresh(10000);
   window.__YOYO_SHARED_SYNC__ = {
     refresh: refreshFromServer,
     flush: flushQueuedUpdates,

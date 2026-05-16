@@ -192,5 +192,5 @@
     enhanceStudent(session.id);
   });
 
-  observer.observe(app, { childList: true, subtree: true });
+  observer.observe(app, { childList: true });
 })();
