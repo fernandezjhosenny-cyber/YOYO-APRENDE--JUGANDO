@@ -1,16 +1,51 @@
-﻿(function () {
+(function () {
+  const DEBUG = true;
+  const SESSION_KEY = "yoyo_rg_x";
   const CORE_TEACHER_SCRIPTS = [
-    "teacher-console-lite.js?v=20260508-3"
+    "teacher-console-lite.js?v=20260515-2"
   ];
 
-  const DEFERRED_GAME_SCRIPTS = [];
+  const STUDENT_GAME_SCRIPTS = [
+    "anuncio-radial-order.js?v=20260505-1",
+    "anuncio-radial-fill.js?v=20260505-1",
+    "anuncio-radial-classify.js?v=20260505-1",
+    "anuncio-radial-memory.js?v=20260505-1",
+    "anuncio-radial-detective.js?v=20260505-1",
+    "anuncio-radial-target.js?v=20260505-1",
+    "anuncio-radial-cubes.js?v=20260505-1",
+    "anuncio-radial-pair.js?v=20260505-1",
+    "anuncio-radial-wordsearch.js?v=20260505-1",
+    "anuncio-radial-timeline.js?v=20260505-1",
+    "anuncio-radial-studio.js?v=20260505-1",
+    "oda-feedback-cleanup.js?v=20260501-1",
+    "oda-order.js?v=20260501-1",
+    "oda-fill.js?v=20260501-1",
+    "oda-classify.js?v=20260501-1",
+    "oda-memory.js?v=20260501-1",
+    "oda-detective-simple.js?v=20260502-1",
+    "oda-cubes.js?v=20260502-1",
+    "oda-pair.js?v=20260502-1",
+    "oda-wordsearch.js?v=20260502-1",
+    "oda-timeline.js?v=20260502-1",
+    "oda-studio.js?v=20260504-1"
+  ];
 
   let teacherScriptsLoaded = false;
-  let deferredGamesLoaded = false;
+  let teacherRenderPending = false;
+  let studentScriptsLoaded = false;
+
+  function debugCount(label) {
+    if (DEBUG) console.count(label);
+  }
+
+  function debugLog(label, payload) {
+    if (DEBUG) console.info(label, payload || "");
+  }
 
   function readSession() {
+    debugCount("[YOYO_DEBUG] session read");
     try {
-      const raw = localStorage.getItem("yoyo_rg_x");
+      const raw = localStorage.getItem(SESSION_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -33,87 +68,101 @@
     });
   }
 
-  async function loadSerial(list) {
-    for (const src of list) {
+  async function ensureTeacherScripts() {
+    debugCount("[YOYO_DEBUG] ensureTeacherScripts");
+    if (teacherScriptsLoaded) return;
+    teacherScriptsLoaded = true;
+    for (const src of CORE_TEACHER_SCRIPTS) {
       try {
         await loadScript(src);
       } catch (error) {
-        console.warn("[YOYO] modulo no cargado:", src, error);
+        console.warn("[YOYO] modulo docente no cargado:", src, error);
       }
     }
   }
 
-  async function ensureTeacherScripts() {
-    if (teacherScriptsLoaded) return;
-    teacherScriptsLoaded = true;
-    await loadSerial(CORE_TEACHER_SCRIPTS);
-  }
-
-  function ensureDeferredGames(delay = 900) {
-    if (deferredGamesLoaded) return;
-    deferredGamesLoaded = true;
-    idle(() => loadSerial(DEFERRED_GAME_SCRIPTS), delay);
-  }
-
-  async function ensureStudentGamesNow() {
-    if (deferredGamesLoaded) return;
-    deferredGamesLoaded = true;
-    await loadSerial(DEFERRED_GAME_SCRIPTS);
-  }
-
-  function idle(task, fallback = 1200) {
-    if ("requestIdleCallback" in window) {
-      window.requestIdleCallback(task, { timeout: fallback });
-      return;
-    }
-    window.setTimeout(task, fallback);
-  }
-
-  async function boot() {
-    const session = readSession();
-    if (!session) return;
-
-    if (session.role === "teacher") {
-      await ensureTeacherScripts();
-      return;
-    }
-
-    await ensureStudentGamesNow();
-  }
-
-  function watchSessionChanges() {
-    const timer = window.setInterval(async () => {
-      const session = readSession();
-      if (!session) return;
-      if (session.role === "teacher") {
-        await ensureTeacherScripts();
-        window.clearInterval(timer);
-        return;
+  async function ensureStudentScripts() {
+    debugCount("[YOYO_DEBUG] ensureStudentScripts");
+    if (studentScriptsLoaded) return;
+    studentScriptsLoaded = true;
+    for (const src of STUDENT_GAME_SCRIPTS) {
+      try {
+        await loadScript(src);
+      } catch (error) {
+        console.warn("[YOYO] modulo estudiante no cargado:", src, error);
       }
-      await ensureStudentGamesNow();
-      window.clearInterval(timer);
-    }, 700);
+    }
+  }
 
-    window.addEventListener("storage", async () => {
-      const session = readSession();
-      if (!session) return;
-      if (session.role === "teacher") {
-        await ensureTeacherScripts();
-        return;
-      }
-      await ensureStudentGamesNow();
+  async function renderTeacherLite(reason) {
+    debugCount("[YOYO_DEBUG] teacher render request");
+    debugLog("[YOYO_DEBUG] teacher render reason", reason);
+    await ensureTeacherScripts();
+    if (typeof window.__YOYO_TEACHER_LITE_RENDER === "function") {
+      window.__YOYO_TEACHER_LITE_RENDER(reason);
+    }
+  }
+
+  function scheduleTeacherRender(reason) {
+    debugCount("[YOYO_DEBUG] teacher render scheduled");
+    if (teacherRenderPending) return;
+    teacherRenderPending = true;
+    queueMicrotask(async () => {
+      teacherRenderPending = false;
+      await renderTeacherLite(reason);
     });
   }
 
-  if (document.readyState === "complete") {
-    boot();
-  } else {
-    window.addEventListener("load", boot, { once: true });
+  async function handleSessionChange(source) {
+    debugCount("[YOYO_DEBUG] session change handler");
+    const session = readSession();
+    debugLog("[YOYO_DEBUG] session source", { source, role: session?.role || "none" });
+    if (!session) return;
+    if (session.role === "teacher") {
+      scheduleTeacherRender(source);
+      return;
+    }
+    await ensureStudentScripts();
   }
 
-  watchSessionChanges();
+  function patchStorageEvents() {
+    if (window.__yoyoStoragePatchApplied) return;
+    window.__yoyoStoragePatchApplied = true;
+
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+
+    localStorage.setItem = function (key, value) {
+      const result = originalSetItem(key, value);
+      if (key === SESSION_KEY) {
+        window.dispatchEvent(new CustomEvent("yoyo:session-changed", { detail: { type: "set", value } }));
+      }
+      return result;
+    };
+
+    localStorage.removeItem = function (key) {
+      const result = originalRemoveItem(key);
+      if (key === SESSION_KEY) {
+        window.dispatchEvent(new CustomEvent("yoyo:session-changed", { detail: { type: "remove" } }));
+      }
+      return result;
+    };
+  }
+
+  window.__YOYO_TEACHER_LITE_MOUNT__ = function (reason) {
+    debugCount("[YOYO_DEBUG] teacher mount hook");
+    scheduleTeacherRender(reason || "teacher-hook");
+    return true;
+  };
+
+  patchStorageEvents();
+
+  window.addEventListener("yoyo:session-changed", () => handleSessionChange("custom-event"));
+  window.addEventListener("storage", () => handleSessionChange("storage-event"));
+
+  if (document.readyState === "complete") {
+    handleSessionChange("boot-complete");
+  } else {
+    window.addEventListener("load", () => handleSessionChange("boot-load"), { once: true });
+  }
 })();
-
-
-
-

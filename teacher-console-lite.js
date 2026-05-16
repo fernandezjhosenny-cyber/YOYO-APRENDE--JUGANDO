@@ -597,10 +597,12 @@
     } catch {}
   }
 
-  function renderLiteTeacher() {
+  function renderLiteTeacher(reason) {
+    console.count("[YOYO_DEBUG] teacher-console renderLiteTeacher");
+    if (reason) console.info("[YOYO_DEBUG] teacher-console reason", reason);
     const session = getSession();
     if (!session || session.role !== "teacher") return false;
-    const current = app.querySelector(".real-dashboard");
+    const current = app.querySelector(".teacher-lite-shell, .real-dashboard, .real-shell");
     if (!current) return false;
 
     const teacher = getTeacher();
@@ -782,6 +784,7 @@
   }
 
   function bindLiteTeacher(teacher, summaries) {
+    console.count("[YOYO_DEBUG] teacher-console bindLiteTeacher");
     app.querySelector("[data-lite-copy-code]")?.addEventListener("click", async () => {
       await copyText(teacher.code);
       showToast("Codigo copiado.");
@@ -826,21 +829,17 @@
     });
   }
 
-  function mount() {
+  function mount(reason) {
+    console.count("[YOYO_DEBUG] teacher-console mount");
     const session = getSession();
     if (!session || session.role !== "teacher") return false;
-    return renderLiteTeacher();
+    return renderLiteTeacher(reason || "direct-mount");
   }
 
-  const observer = new MutationObserver(() => {
-    const session = getSession();
-    if (!session || session.role !== "teacher") return;
-    if (!app.querySelector(".teacher-lite-shell")) {
-      if (renderLiteTeacher()) observer.disconnect();
-    }
-  });
+  window.__YOYO_TEACHER_LITE_RENDER = function (reason) {
+    console.count("[YOYO_DEBUG] teacher-console external render");
+    return renderLiteTeacher(reason || "external");
+  };
 
-  if (!mount()) {
-    observer.observe(app, { childList: true, subtree: true });
-  }
+  mount("initial-load");
 })();
