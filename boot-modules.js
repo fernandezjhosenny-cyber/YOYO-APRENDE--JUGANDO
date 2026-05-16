@@ -2,7 +2,7 @@
   const DEBUG = true;
   const SESSION_KEY = "yoyo_rg_x";
   const CORE_TEACHER_SCRIPTS = [
-    "teacher-console-lite.js?v=20260515-2"
+    "teacher-console-lite.js?v=20260516-1"
   ];
 
   const STUDENT_GAME_SCRIPTS = [

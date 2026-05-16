@@ -162,6 +162,67 @@
   }
 
   function buildStudentSummary(student, teacher, rawProgress) {
+    const helper = window.__YOYO_PROGRESS__;
+    if (helper && typeof helper.summarizeStudentProgress === "function") {
+      const snapshot = helper.summarizeStudentProgress(student, rawProgress || {});
+      const gameRows = (snapshot.historyRows || []).map((row) => ({
+        id: row.activityId,
+        name: row.activityName,
+        topicId: row.topicId,
+        topic: row.topicTitle,
+        level: row.level || "Nivel",
+        score: Math.round(Number(row.points || 0)),
+        percent: Math.round(Number(row.percent || 0)),
+        proportionalScore: Math.round(Number(row.proportionalScore || 0)),
+        competency: row.competency || "C1",
+        date: formatDate(row.date),
+        rawDate: row.date || "",
+        attempts: 1,
+        status: row.status || "En progreso"
+      }));
+      const topicCards = (snapshot.topicCards || []).map((topic) => ({
+        ...topic,
+        recommendation:
+          topic.recommendation ||
+          recommendationForCompetency(
+            topic.title,
+            Object.entries(topic.competencies || {}).sort((a, b) => a[1] - b[1])[0]?.[0] || "C1",
+            Object.entries(topic.competencies || {}).sort((a, b) => a[1] - b[1])[0]?.[1] || 0
+          )
+      }));
+      const lastWorkedTopic =
+        (snapshot.lastRow && topicCards.find((topic) => topic.id === snapshot.lastRow.topicId)) ||
+        [...topicCards].sort((a, b) => b.progress - a.progress)[0] ||
+        null;
+      const strongestTopic = [...topicCards].sort((a, b) => b.progress - a.progress)[0] || null;
+      const weakestTopic = [...topicCards].sort((a, b) => a.progress - b.progress)[0] || null;
+      const overallState = stateFromPercent(snapshot.averagePercent || 0);
+      return {
+        student,
+        section: sectionLabel(student, teacher),
+        lastAccess: formatDate(student.lastAccess || snapshot.lastRow?.date),
+        averagePercent: Number(snapshot.averagePercent || 0),
+        totalPoints: Number(snapshot.totalPoints || 0),
+        overallState,
+        lastActivity: snapshot.lastRow ? `${snapshot.lastRow.activityName} · ${snapshot.lastRow.topicTitle}` : "Sin actividad",
+        completedGames: Number(snapshot.completedGames || 0),
+        pendingGames: Number(snapshot.pendingGames || 0),
+        pendingLevels: Number(snapshot.pendingLevels || 0),
+        failedAttempts: Number(snapshot.failedAttempts || 0),
+        overallCompetencies: snapshot.overallCompetencies || { C1: 0, C2: 0, C3: 0 },
+        topicCards,
+        workedTopics: topicCards.filter((topic) => topic.progress > 0),
+        lastTopicSummary: lastWorkedTopic,
+        strongestTopic,
+        weakestTopic,
+        gameRows,
+        historyRows: snapshot.historyRows || [],
+        bestActivities: snapshot.bestActivities || [],
+        recommendation: snapshot.recommendation || (weakestTopic ? weakestTopic.recommendation : "Invitar a completar su primera actividad."),
+        riskScore: (100 - Number(snapshot.averagePercent || 0)) + Number(snapshot.pendingGames || 0) + Number(snapshot.failedAttempts || 0) * 6 + Math.max(0, 50 - Number(snapshot.totalPoints || 0))
+      };
+    }
+
     const entries = Object.entries(rawProgress || {}).map(([id, item]) => ({
       id,
       topicId: item?.topicId || String(id).split("-")[0],
@@ -428,11 +489,19 @@
   function buildExcelRows(summaries, state) {
     const rows = [[
       "Nombre del estudiante",
+      "Codigo de clase",
       "Seccion",
       "Temario trabajado",
       "Nombre de la actividad o juego",
+      "Nivel",
       "Competencia evaluada",
       "Puntuacion obtenida",
+      "Porcentaje logrado",
+      "Nota proporcional",
+      "Nota C1",
+      "Nota C2",
+      "Nota C3",
+      "Promedio",
       "Fecha de realizacion",
       "Estado"
     ]];
@@ -441,18 +510,31 @@
     TOPICS.forEach((topic) => byTopic.set(topic.id, []));
 
     summaries.forEach((summary) => {
-      summary.gameRows.forEach((row) => {
+      const sourceRows = Array.isArray(summary.historyRows) && summary.historyRows.length
+        ? summary.historyRows
+        : summary.gameRows;
+      sourceRows.forEach((row) => {
         if (state.topic !== "all" && row.topicId !== state.topic) return;
-        if (state.competency !== "all" && !row.competency.includes(state.competency)) return;
+        const rowCompetency = row.competency || (Array.isArray(row.competencies) ? row.competencies.join(", ") : "C1");
+        if (state.competency !== "all" && !String(rowCompetency).includes(state.competency)) return;
         if (state.status !== "all" && row.status !== state.status) return;
+        const topicCard = summary.topicCards.find((item) => item.id === row.topicId);
         byTopic.get(row.topicId)?.push([
           summary.student.name,
+          summary.student.code || "",
           summary.section,
-          row.topic,
-          row.name,
-          row.competency,
-          row.score,
-          row.date,
+          row.topicTitle || row.topic,
+          row.activityName || row.name,
+          row.level || "Nivel",
+          rowCompetency,
+          Number(row.points ?? row.score ?? 0),
+          Number(row.percent ?? 0),
+          Number(row.proportionalScore ?? 0),
+          topicCard?.competencies?.C1 ?? 0,
+          topicCard?.competencies?.C2 ?? 0,
+          topicCard?.competencies?.C3 ?? 0,
+          topicCard?.progress ?? 0,
+          row.date ? formatDate(row.date) : (row.rawDate || row.date || ""),
           row.status
         ]);
       });
@@ -471,43 +553,74 @@
 
   function buildStudentProgressRows(summary) {
     const rows = [
-      ["Reporte de progreso del estudiante", "", "", "", "", "", "", ""],
-      ["Nombre del estudiante", summary.student.name, "", "", "", "", "", ""],
-      ["Seccion", summary.section, "", "", "", "", "", ""],
-      ["Progreso general", `${summary.averagePercent}%`, "", "", "", "", "", ""],
-      ["Juegos completados", summary.completedGames, "Juegos pendientes", summary.pendingGames, "", "", "", ""],
-      ["Puntaje total", summary.totalPoints, "Ultima actividad", summary.lastActivity, "", "", "", ""],
-      ["", "", "", "", "", "", "", ""],
-      ["Competencias generales", "", "", "", "", "", "", ""],
-      ["C1", `${summary.overallCompetencies.C1}/100`, "C2", `${summary.overallCompetencies.C2}/100`, "C3", `${summary.overallCompetencies.C3}/100`, "", ""],
-      ["", "", "", "", "", "", "", ""],
-      ["Temarios trabajados", "", "", "", "", "", "", ""],
+      ["Reporte de progreso del estudiante", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Nombre del estudiante", summary.student.name, "Codigo de clase", summary.student.code || "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Seccion", summary.section, "Ultimo acceso", summary.lastAccess, "", "", "", "", "", "", "", "", "", "", ""],
+      ["Promedio general", `${summary.averagePercent}/100`, "Ultima actividad", summary.lastActivity, "", "", "", "", "", "", "", "", "", "", ""],
+      ["Juegos completados", summary.completedGames, "Juegos pendientes", summary.pendingGames, "Niveles pendientes", summary.pendingLevels || 0, "", "", "", "", "", "", "", "", ""],
+      ["Puntaje total", summary.totalPoints, "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Competencias generales", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["C1", `${summary.overallCompetencies.C1}/100`, "C2", `${summary.overallCompetencies.C2}/100`, "C3", `${summary.overallCompetencies.C3}/100`, "", "", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Temarios trabajados", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
     ];
 
     summary.topicCards.forEach((topic) => {
       if (topic.progress <= 0 && topic.completed <= 0) return;
       rows.push(
-        [topic.title, "", "", "", "", "", "", ""],
-        ["Promedio general del temario", `${topic.progress}%`, "Actividades completadas", `${topic.completed}/${topic.total}`, "Estado", topic.state.label, "", ""],
-        ["C1", `${topic.competencies.C1}/100`, "C2", `${topic.competencies.C2}/100`, "C3", `${topic.competencies.C3}/100`, "", ""],
-        ["Recomendacion", topic.recommendation, "", "", "", "", "", ""],
-        ["", "", "", "", "", "", "", ""]
+        [topic.title, "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+        ["Promedio general del temario", `${topic.progress}/100`, "Actividades completadas", `${topic.completed}/${topic.total}`, "Estado", topic.state.label, "", "", "", "", "", "", "", "", ""],
+        ["C1", `${topic.competencies.C1}/100`, "C2", `${topic.competencies.C2}/100`, "C3", `${topic.competencies.C3}/100`, "", "", "", "", "", "", "", "", ""],
+        ["Recomendacion", topic.recommendation, "", "", "", "", "", "", "", "", "", "", "", "", ""],
+        ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
       );
     });
 
     rows.push(
-      ["Fortalezas", "", "", "", "", "", "", ""],
-      ["Temario con mejor avance", summary.strongestTopic?.title || "Sin datos", "Progreso", `${summary.strongestTopic?.progress || 0}%`, "", "", "", ""],
-      ["Debilidades", "", "", "", "", "", "", ""],
-      ["Temario a reforzar", summary.weakestTopic?.title || "Sin datos", "Progreso", `${summary.weakestTopic?.progress || 0}%`, "", "", "", ""],
-      ["Recomendacion general", summary.recommendation, "", "", "", "", "", ""],
-      ["", "", "", "", "", "", "", ""],
-      ["Actividades y puntuaciones", "", "", "", "", "", "", ""],
-      ["Nombre del juego", "Temario", "Competencia", "Puntuacion", "Fecha", "Intentos", "Estado", ""]
+      ["Fortalezas", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Temario con mejor avance", summary.strongestTopic?.title || "Sin datos", "Progreso", `${summary.strongestTopic?.progress || 0}/100`, "", "", "", "", "", "", "", "", "", "", ""],
+      ["Debilidades", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Temario a reforzar", summary.weakestTopic?.title || "Sin datos", "Progreso", `${summary.weakestTopic?.progress || 0}/100`, "", "", "", "", "", "", "", "", "", "", ""],
+      ["Recomendacion general", summary.recommendation, "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Mejor puntuacion por actividad", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Juego", "Temario", "Competencias", "Mejor puntuacion", "Porcentaje", "Intentos", "Niveles pendientes", "Estado", "", "", "", "", "", "", ""]
     );
 
-    summary.gameRows.forEach((row) => {
-      rows.push([row.name, row.topic, row.competency, row.score, row.date, row.attempts, row.status, ""]);
+    (summary.bestActivities || []).forEach((row) => {
+      rows.push([
+        row.activityName,
+        row.topicTitle,
+        (row.competencies || []).join(", "),
+        row.bestScore,
+        `${row.bestPercent}%`,
+        row.attempts,
+        row.pendingLevels,
+        row.status,
+        "", "", "", "", "", "", ""
+      ]);
+    });
+
+    rows.push(
+      ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Historial por actividad", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+      ["Temario", "Juego", "Nivel", "Competencia", "Puntos obtenidos", "Porcentaje", "Nota proporcional", "Fecha", "Estado", "", "", "", "", "", ""]
+    );
+
+    (summary.historyRows || []).forEach((row) => {
+      rows.push([
+        row.topicTitle || row.topic,
+        row.activityName || row.name,
+        row.level || "Nivel",
+        row.competency || "C1",
+        Number(row.points ?? row.score ?? 0),
+        `${Number(row.percent || 0)}%`,
+        Number(row.proportionalScore ?? 0),
+        row.date ? formatDate(row.date) : (row.rawDate || row.date || ""),
+        row.status || "",
+        "", "", "", "", "", ""
+      ]);
     });
 
     return rows;
@@ -543,14 +656,24 @@
       .teacher-lite-field{display:grid;gap:6px;font-size:.84rem;font-weight:700;color:#52627f}
       .teacher-lite-field select{border:1px solid rgba(141,160,202,.22);border-radius:16px;padding:10px 12px;font:inherit;background:#fff}
       .teacher-lite-list,.teacher-lite-attention-list{display:grid;gap:12px}
-      .teacher-lite-student{display:grid;grid-template-columns:minmax(260px,1.8fr) minmax(200px,.8fr);gap:14px;align-items:center;padding:18px;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f8f5ff);box-shadow:0 10px 24px rgba(93,104,152,.08)}
-      .teacher-lite-student-main{display:flex;gap:12px;align-items:center;min-width:0}
-      .teacher-lite-student-copy{display:grid;gap:4px}
-      .teacher-lite-student-copy strong{display:block;color:#284375}
-      .teacher-lite-student-copy small{display:block;color:#5d6a84;line-height:1.3}
-      .teacher-lite-avatar{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#ede9fe,#dbeafe);color:#6d28d9;font-weight:900}
-      .teacher-lite-student-side{display:grid;gap:8px;justify-items:start}
-      .teacher-lite-stat-label{font-size:.76rem;font-weight:800;color:#6d28d9;text-transform:uppercase;letter-spacing:.04em}
+        .teacher-lite-student{display:grid;grid-template-columns:minmax(260px,1.5fr) minmax(280px,1.2fr) minmax(170px,.7fr);gap:14px;align-items:center;padding:18px;border-radius:22px;background:linear-gradient(135deg,#ffffff,#f8f5ff);box-shadow:0 10px 24px rgba(93,104,152,.08)}
+        .teacher-lite-student-main{display:flex;gap:12px;align-items:center;min-width:0}
+        .teacher-lite-student-copy{display:grid;gap:4px}
+        .teacher-lite-student-copy strong{display:block;color:#284375}
+        .teacher-lite-student-copy small{display:block;color:#5d6a84;line-height:1.3}
+        .teacher-lite-avatar{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#ede9fe,#dbeafe);color:#6d28d9;font-weight:900}
+        .teacher-lite-student-side{display:grid;gap:8px;justify-items:start}
+        .teacher-lite-topic-summary{display:grid;gap:8px;min-width:0}
+        .teacher-lite-topic-summary strong{color:#284375}
+        .teacher-lite-bars{display:grid;grid-template-columns:repeat(4,minmax(58px,1fr));gap:10px}
+        .teacher-lite-bar{display:grid;gap:4px}
+        .teacher-lite-bar label{font-size:.72rem;font-weight:900;color:#6d28d9;text-transform:uppercase}
+        .teacher-lite-bar-track{height:8px;border-radius:999px;background:#edf2ff;overflow:hidden}
+        .teacher-lite-bar-track i{display:block;height:100%;background:linear-gradient(135deg,#1f70ff,#7b36eb)}
+        .teacher-lite-bar-track i.warn{background:linear-gradient(135deg,#f59e0b,#f97316)}
+        .teacher-lite-bar-track i.danger{background:linear-gradient(135deg,#fb7185,#ef4444)}
+        .teacher-lite-bar span{font-size:.76rem;color:#5d6a84}
+        .teacher-lite-stat-label{font-size:.76rem;font-weight:800;color:#6d28d9;text-transform:uppercase;letter-spacing:.04em}
       .teacher-lite-progress{height:8px;border-radius:999px;background:#edf2ff;overflow:hidden}
       .teacher-lite-progress i{display:block;height:100%;border-radius:999px}
       .teacher-lite-progress i.good{background:linear-gradient(135deg,#22c55e,#34d399)}
@@ -728,21 +851,36 @@
 
                 <div class="teacher-lite-list" style="margin-top:14px;">
                   ${filtered.length ? filtered.map((item) => `
-                    <article class="teacher-lite-student">
-                      <div class="teacher-lite-student-main">
-                        <div class="teacher-lite-avatar">${escapeHtml(item.student.name.slice(0, 1).toUpperCase())}</div>
-                        <div class="teacher-lite-student-copy">
-                          <strong>${escapeHtml(item.student.name)}</strong>
-                          <small>Seccion: ${escapeHtml(item.section)}</small>
-                          <small>Ultimo acceso: ${escapeHtml(item.lastAccess)}</small>
-                          <small>Ultimo temario: ${escapeHtml(item.lastTopicSummary?.title || "Sin actividad")}</small>
+                      <article class="teacher-lite-student">
+                        <div class="teacher-lite-student-main">
+                          <div class="teacher-lite-avatar">${escapeHtml(item.student.name.slice(0, 1).toUpperCase())}</div>
+                          <div class="teacher-lite-student-copy">
+                            <strong>${escapeHtml(item.student.name)}</strong>
+                            <small>Seccion: ${escapeHtml(item.section)}</small>
+                            <small>Ultimo acceso: ${escapeHtml(item.lastAccess)}</small>
+                            <small>Ultimo temario: ${escapeHtml(item.lastTopicSummary?.title || "Sin actividad")}</small>
+                          </div>
                         </div>
-                      </div>
-                      <div class="teacher-lite-student-side">
-                        <span class="teacher-lite-badge ${item.overallState.tone}">${item.overallState.label}</span>
-                        <div class="teacher-lite-actions" style="margin-top:8px;justify-content:flex-start;">
-                          <button class="teacher-lite-btn primary" type="button" data-lite-download-student="${item.student.id}">Descargar progreso</button>
+                        <div class="teacher-lite-topic-summary">
+                          <strong>${escapeHtml(item.lastTopicSummary?.title || "Sin actividad")}</strong>
+                          <div class="teacher-lite-bars">
+                            ${["C1", "C2", "C3"].map((key) => {
+                              const value = item.lastTopicSummary?.competencies?.[key] || 0;
+                              const tone = value >= 80 ? "" : value >= 50 ? "warn" : "danger";
+                              return `<div class="teacher-lite-bar"><label>${key}</label><div class="teacher-lite-bar-track"><i class="${tone}" style="width:${value}%"></i></div><span>${value}/100</span></div>`;
+                            }).join("")}
+                            <div class="teacher-lite-bar">
+                              <label>Prom.</label>
+                              <div class="teacher-lite-bar-track"><i class="${item.lastTopicSummary?.progress >= 80 ? "" : item.lastTopicSummary?.progress >= 50 ? "warn" : "danger"}" style="width:${item.lastTopicSummary?.progress || 0}%"></i></div>
+                              <span>${item.lastTopicSummary?.progress || 0}/100</span>
+                            </div>
+                          </div>
                         </div>
+                        <div class="teacher-lite-student-side">
+                          <span class="teacher-lite-badge ${item.overallState.tone}">${item.overallState.label}</span>
+                          <div class="teacher-lite-actions" style="margin-top:8px;justify-content:flex-start;">
+                            <button class="teacher-lite-btn primary" type="button" data-lite-download-student="${item.student.id}">Descargar progreso</button>
+                          </div>
                       </div>
                     </article>
                   `).join("") : `<div class="teacher-lite-empty">No hay estudiantes para ese filtro.</div>`}
@@ -768,12 +906,12 @@
               </section>
             </div>
 
-            <section class="teacher-lite-panel">
-              <div class="teacher-lite-kicker" style="margin-top:16px;">Vista ligera del seguimiento</div>
-              <div class="teacher-lite-empty-panel">
-                <p class="teacher-lite-placeholder" style="margin:0">En esta pantalla solo se muestra el resumen del ultimo temario trabajado. El detalle completo del estudiante se genera al usar <strong>Descargar progreso</strong>.</p>
-              </div>
-            </section>
+              <section class="teacher-lite-panel">
+                <div class="teacher-lite-kicker" style="margin-top:16px;">Vista ligera del seguimiento</div>
+                <div class="teacher-lite-empty-panel">
+                  <p class="teacher-lite-placeholder" style="margin:0">En esta pantalla solo se muestra el resumen del ultimo temario trabajado con sus notas C1, C2, C3 y promedio. El detalle completo del estudiante se genera al usar <strong>Descargar progreso</strong>.</p>
+                </div>
+              </section>
           </div>
         </div>
       </section>
